@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' blob: data:;
+  font-src 'self';
+  connect-src 'self' https: http://localhost:* http://127.0.0.1:*;
+  media-src 'self' blob:;
+  object-src 'none';
+  base-uri 'self';
+  form-action 'none';
+  manifest-src 'self';
+">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>FitYar</title>
+<meta name="description" content="Private nutrition &amp; training tracker">
+<meta name="theme-color" content="#0b0d10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitYar">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="preload" href="./fonts/vazirmatn-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="./css/app.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ══════════ TOP BAR ══════════ -->
+  <header id="topbar">
+    <button class="tb-btn" id="tb-back" hidden aria-label="back">
+      <svg viewBox="0 0 24 24" class="ico"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <h1 id="tb-title">FitYar</h1>
+    <div class="tb-right">
+      <button class="tb-btn" id="tb-action" hidden></button>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ══════════ HOME ══════════ -->
+    <section class="screen" id="screen-home">
+      <div class="today-bar">
+        <span id="today-label"></span>
+        <button class="link" id="home-history">
+          <svg viewBox="0 0 24 24" class="ico sm"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
+          <span data-i18n="dayHistory">تاریخچه روزها</span>
+          <b id="history-count"></b>
+          <i class="sh-arrow">›</i>
+        </button>
+      </div>
+
+      <div class="card ring-card">
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="ring-fg" id="kcal-ring" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="ring-center">
+            <b id="kcal-left">0</b>
+            <span data-i18n="kcalLeft">کالری باقی‌مانده</span>
+          </div>
+        </div>
+        <div class="ring-side">
+          <div class="rs-row"><span data-i18n="goal">هدف</span><b id="kcal-goal">0</b></div>
+          <div class="rs-row"><span data-i18n="eaten">خورده</span><b id="kcal-eaten">0</b></div>
+          <div class="rs-row"><span data-i18n="burned">سوزانده</span><b id="kcal-burned">0</b></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="macro-grid" id="macro-grid"></div>
+      </div>
+
+      <div id="home-today"></div>
+      <div id="home-targets"></div>
+
+      <div class="quick-row">
+        <button class="quick" id="q-photo">
+          <svg viewBox="0 0 24 24" class="ico"><path d="M3 8h3l2-3h8l2 3h3v11H3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <span data-i18n="scanMeal">اسکن غذا</span>
+        </button>
+        <button class="quick" id="q-food">
+          <svg viewBox="0 0 24 24" class="ico"><path d="M12 5v14M5 12h14"/></svg>
+          <span data-i18n="addFood">افزودن غذا</span>
+        </button>
+        <button class="quick" id="q-train">
+          <svg viewBox="0 0 24 24" class="ico"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>
+          <span data-i18n="startWorkout">شروع تمرین</span>
+        </button>
+      </div>
+
+      <div class="card" id="home-water-card">
+        <div class="card-head">
+          <h3 data-i18n="water">آب</h3>
+          <span class="muted" id="water-sum">0 / 0</span>
+        </div>
+        <div class="water-row" id="water-cups"></div>
+        <div class="btn-row">
+          <button class="btn ghost sm" id="water-minus">−250ml</button>
+          <button class="btn sm" id="water-plus">+250ml</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3 data-i18n="todayMeals">وعده‌های امروز</h3>
+          <button class="link" id="go-diary" data-i18n="seeAll">مشاهده همه</button>
+        </div>
+        <div id="home-meals" class="mini-list"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h3 data-i18n="recentWorkouts">تمرین‌های اخیر</h3>
+          <button class="link" id="go-train" data-i18n="seeAll">مشاهده همه</button>
+        </div>
+        <div id="home-workouts" class="mini-list"></div>
+      </div>
+    </section>
+
+    <!-- ══════════ DIARY ══════════ -->
+    <section class="screen" id="screen-diary" hidden>
+      <div class="date-nav">
+        <button class="tb-btn" id="d-prev"><svg viewBox="0 0 24 24" class="ico flip"><path d="M15 5l-7 7 7 7"/></svg></button>
+        <button class="date-label" id="d-label"></button>
+        <button class="tb-btn" id="d-next"><svg viewBox="0 0 24 24" class="ico flip"><path d="M9 5l7 7-7 7"/></svg></button>
+        <button class="tb-btn" id="d-history" aria-label="history">
+          <svg viewBox="0 0 24 24" class="ico"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
+        </button>
+      </div>
+
+      <div class="card summary-bar">
+        <div><b id="dsum-kcal">0</b><span data-i18n="kcal">کالری</span></div>
+        <div><b id="dsum-p">0g</b><span data-i18n="protein">پروتئین</span></div>
+        <div><b id="dsum-c">0g</b><span data-i18n="carbs">کربوهیدرات</span></div>
+        <div><b id="dsum-f">0g</b><span data-i18n="fat">چربی</span></div>
+      </div>
+
+      <div class="btn-row" id="diary-quick"></div>
+      <div id="diary-meals"></div>
+      <div id="diary-close"></div>
+
+      <div class="card">
+        <div class="card-head"><h3 data-i18n="dailyNote">یادداشت روز</h3></div>
+        <textarea id="day-note" class="input" rows="2" placeholder="…"></textarea>
+      </div>
+      <div class="spacer"></div>
+    </section>
+
+    <!-- ══════════ TRAIN ══════════ -->
+    <section class="screen" id="screen-train" hidden>
+      <div class="seg" id="train-seg">
+        <button class="seg-btn active" data-tab="routines" data-i18n="routines">برنامه‌ها</button>
+        <button class="seg-btn" data-tab="history" data-i18n="history">تاریخچه</button>
+        <button class="seg-btn" data-tab="exercises" data-i18n="exercises">حرکات</button>
+      </div>
+
+      <div id="tab-routines">
+        <button class="wizard-cta" id="open-wizard">
+          <span class="wc-glow"></span>
+          <span class="wc-ico">🎯</span>
+          <span class="wc-txt">
+            <b data-i18n="startWizard">ساخت برنامه اختصاصی</b>
+            <span data-i18n="wizardSub">چند سؤال، بعد برنامه‌ات آماده است</span>
+          </span>
+          <span class="wc-arrow">›</span>
+        </button>
+        <button class="btn big" id="start-empty">
+          <svg viewBox="0 0 24 24" class="ico"><path d="M12 5v14M5 12h14"/></svg>
+          <span data-i18n="startEmptyWorkout">شروع تمرین خالی</span>
+        </button>
+        <div class="card-head pad">
+          <h3 data-i18n="myRoutines">برنامه‌های من</h3>
+          <button class="link" id="new-routine" data-i18n="new">جدید</button>
+        </div>
+        <div id="routine-list" class="list"></div>
+        <div class="card-head pad"><h3 data-i18n="templates">الگوهای آماده</h3></div>
+        <div id="template-list" class="list"></div>
+      </div>
+
+      <div id="tab-history" hidden>
+        <div class="card summary-bar">
+          <div><b id="h-count">0</b><span data-i18n="workouts">تمرین</span></div>
+          <div><b id="h-vol">0</b><span data-i18n="totalVolume">حجم کل</span></div>
+          <div><b id="h-time">0</b><span data-i18n="totalTime">زمان کل</span></div>
+        </div>
+        <div id="workout-history" class="list"></div>
+      </div>
+
+      <div id="tab-exercises" hidden>
+        <div class="search-row">
+          <input class="input" id="ex-search" placeholder="جستجو…" data-i18n-ph="search">
+          <button class="btn ghost sm" id="add-exercise" data-i18n="new">جدید</button>
+        </div>
+        <div class="chips" id="ex-filters"></div>
+        <div id="exercise-list" class="list"></div>
+      </div>
+      <div class="spacer"></div>
+    </section>
+
+    <!-- ══════════ PROGRESS ══════════ -->
+    <section class="screen" id="screen-progress" hidden>
+      <div class="seg" id="prog-seg">
+        <button class="seg-btn active" data-tab="body" data-i18n="body">بدن</button>
+        <button class="seg-btn" data-tab="nutri" data-i18n="nutrition">تغذیه</button>
+        <button class="seg-btn" data-tab="strength" data-i18n="strength">قدرت</button>
+        <button class="seg-btn" data-tab="reports" data-i18n="foodHistory">تاریخچه تغذیه</button>
+      </div>
+
+      <div id="ptab-body">
+        <div id="week-review"></div>
+        <div class="card">
+          <div class="card-head">
+            <h3 data-i18n="weight">وزن</h3>
+            <button class="link" id="log-weight" data-i18n="log">ثبت</button>
+          </div>
+          <div id="weight-chart" class="chart"></div>
+          <div class="stat-row" id="weight-stats"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h3 data-i18n="bodyPhotos">عکس‌های پیشرفت</h3>
+          </div>
+          <div id="photo-host"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h3 data-i18n="measurements">اندازه‌ها</h3>
+            <button class="link" id="log-measure" data-i18n="log">ثبت</button>
+          </div>
+          <div id="measure-list" class="mini-list"></div>
+        </div>
+      </div>
+
+      <div id="ptab-nutri" hidden>
+        <div class="card">
+          <div class="card-head"><h3 data-i18n="calories14">کالری ۱۴ روز اخیر</h3></div>
+          <div id="kcal-chart" class="chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3 data-i18n="macroAvg">میانگین درشت‌مغذی‌ها</h3></div>
+          <div id="macro-chart" class="chart"></div>
+          <div class="stat-row" id="nutri-stats"></div>
+        </div>
+      </div>
+
+      <div id="ptab-reports" hidden></div>
+
+      <div id="ptab-strength" hidden>
+        <div class="card">
+          <div class="card-head"><h3 data-i18n="weeklyVolume">حجم هفتگی</h3></div>
+          <div id="volume-chart" class="chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3 data-i18n="records">رکوردها</h3></div>
+          <div id="pr-list" class="mini-list"></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+    </section>
+
+    <!-- ══════════ MORE ══════════ -->
+    <section class="screen" id="screen-more" hidden>
+      <div class="card profile-card" id="profile-card">
+        <div class="avatar" id="avatar">?</div>
+        <div>
+          <b id="profile-name">—</b>
+          <span class="muted" id="profile-sub">—</span>
+        </div>
+        <button class="btn ghost sm" id="edit-profile" data-i18n="edit">ویرایش</button>
+      </div>
+
+      <button class="row-btn" id="open-program" style="--rowc:var(--acc)">
+        <svg viewBox="0 0 24 24" class="ico"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="7" cy="6" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>
+        <span data-i18n="yourProgram">برنامه‌ی تو</span>
+      </button>
+      <button class="row-btn" id="open-plan" style="--rowc:var(--purple)">
+        <svg viewBox="0 0 24 24" class="ico"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+        <span data-i18n="aiPlan">برنامه هوشمند</span>
+        <span class="badge" data-i18n="ai">AI</span>
+      </button>
+      <button class="row-btn" id="open-goals" style="--rowc:var(--orange)">
+        <svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
+        <span data-i18n="goalsCalories">اهداف و کالری</span>
+      </button>
+      <button class="row-btn" id="open-tools" style="--rowc:var(--warn)">
+        <svg viewBox="0 0 24 24" class="ico"><path d="M4 9v6M8 7v10M16 7v10M20 9v6M8 12h8"/></svg>
+        <span data-i18n="plateCalc">ماشین‌حساب وزنه</span>
+      </button>
+      <button class="row-btn" id="open-barcodes" style="--rowc:var(--indigo)">
+        <svg viewBox="0 0 24 24" class="ico"><path d="M4 6v12M7 6v12M10 6v12M14 6v12M17 6v12M20 6v12"/></svg>
+        <span data-i18n="myBarcodes">بارکدهای من</span>
+      </button>
+      <button class="row-btn" id="open-schedule" style="--rowc:var(--blue)">
+        <svg viewBox="0 0 24 24" class="ico"><rect x="4" y="5" width="16" height="16" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>
+        <span data-i18n="weekSchedule">برنامه‌ی هفته</span>
+      </button>
+      <button class="row-btn" id="open-myfoods" style="--rowc:var(--teal)">
+        <svg viewBox="0 0 24 24" class="ico"><path d="M5 4v16M5 4h9a4 4 0 010 8H5"/></svg>
+        <span data-i18n="myFoods">غذاهای من</span>
+      </button>
+      <button class="row-btn" id="open-api" style="--rowc:var(--blue)">
+        <svg viewBox="0 0 24 24" class="ico"><path d="M15 7a4 4 0 11-3.4 6.1L7 18l-3-3 4.9-4.6A4 4 0 0115 7z"/></svg>
+        <span data-i18n="aiSettings">تنظیمات هوش مصنوعی</span>
+        <span class="dot" id="api-dot"></span>
+      </button>
+      <button class="row-btn" id="open-prefs" style="--rowc:var(--pink)">
+        <svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+        <span data-i18n="preferences">تنظیمات کلی</span>
+      </button>
+      <button class="row-btn" id="open-backup" style="--rowc:var(--indigo)">
+        <svg viewBox="0 0 24 24" class="ico"><path d="M12 16V4M8 8l4-4 4 4M4 20h16"/></svg>
+        <span data-i18n="backupRestore">پشتیبان‌گیری و بازیابی</span>
+      </button>
+      <button class="row-btn" id="open-about" style="--rowc:var(--tx2)">
+        <svg viewBox="0 0 24 24" class="ico"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+        <span data-i18n="about">درباره</span>
+      </button>
+      <div class="spacer"></div>
+    </section>
+
+    <!-- ══════════ TRAINING PROGRAM (wizard output) ══════════ -->
+    <section class="screen" id="screen-program" hidden>
+      <div id="program-body"></div>
+      <div class="spacer"></div>
+    </section>
+
+    <!-- ══════════ DAY REPORTS ══════════ -->
+    <section class="screen" id="screen-reports" hidden>
+      <div id="reports-body"></div>
+      <div class="spacer"></div>
+    </section>
+
+    <!-- ══════════ AI PLAN ══════════ -->
+    <section class="screen" id="screen-plan" hidden>
+      <div id="plan-body"></div>
+      <div class="spacer"></div>
+    </section>
+
+  </main>
+
+  <!-- ══════════ ACTIVE WORKOUT (full overlay) ══════════ -->
+  <div id="session" hidden>
+    <header id="s-top">
+      <button class="tb-btn" id="s-min"><svg viewBox="0 0 24 24" class="ico"><path d="M6 15l6-6 6 6"/></svg></button>
+      <div class="s-timer"><b id="s-time">00:00</b><span id="s-name">Workout</span></div>
+      <button class="btn sm" id="s-finish" data-i18n="finish">پایان</button>
+    </header>
+    <div id="s-stats" class="s-stats"></div>
+    <div id="s-body"></div>
+    <div class="s-actions">
+      <button class="btn ghost" id="s-add-ex" data-i18n="addExercise">افزودن حرکت</button>
+      <button class="btn danger ghost" id="s-cancel" data-i18n="cancelWorkout">لغو تمرین</button>
+    </div>
+    <div class="spacer"></div>
+  </div>
+
+  <!-- mini bar when session minimized -->
+  <div id="mini-session" hidden>
+    <span class="pulse"></span>
+    <b id="mini-time">00:00</b>
+    <span id="mini-name">Workout</span>
+    <button class="btn sm" id="mini-open" data-i18n="resume">ادامه</button>
+  </div>
+
+  <!-- rest timer -->
+  <div id="rest-bar" hidden>
+    <button class="rest-btn" id="rest-minus">−15</button>
+    <div class="rest-mid"><b id="rest-time">0:00</b><div class="rest-track"><i id="rest-fill"></i></div></div>
+    <button class="rest-btn" id="rest-plus">+15</button>
+    <button class="rest-btn x" id="rest-skip">✕</button>
+  </div>
+
+  <!-- ══════════ BOTTOM NAV ══════════ -->
+  <nav id="tabbar">
+    <button class="tab active" data-screen="home">
+      <svg viewBox="0 0 24 24" class="ico"><path d="M4 11l8-7 8 7v8a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1z"/></svg>
+      <span data-i18n="navHome">خانه</span>
+    </button>
+    <button class="tab" data-screen="diary">
+      <svg viewBox="0 0 24 24" class="ico"><path d="M6 3h9l5 5v13H6z"/><path d="M9 12h8M9 16h5"/></svg>
+      <span data-i18n="navDiary">تغذیه</span>
+    </button>
+    <button class="tab" data-screen="train">
+      <svg viewBox="0 0 24 24" class="ico"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>
+      <span data-i18n="navTrain">تمرین</span>
+    </button>
+    <button class="tab" data-screen="progress">
+      <svg viewBox="0 0 24 24" class="ico"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>
+      <span data-i18n="navProgress">پیشرفت</span>
+    </button>
+    <button class="tab" data-screen="more">
+      <svg viewBox="0 0 24 24" class="ico"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg>
+      <span data-i18n="navMore">بیشتر</span>
+    </button>
+  </nav>
+
+  <!-- ══════════ SHEET / MODAL HOST ══════════ -->
+  <div id="scrim" hidden></div>
+  <div id="sheet" hidden>
+    <div class="sheet-grab"></div>
+    <div class="sheet-head">
+      <h3 id="sheet-title"></h3>
+      <button class="tb-btn" id="sheet-close">✕</button>
+    </div>
+    <div id="sheet-body"></div>
+  </div>
+
+  <div id="toast-host"></div>
+  <div id="loader" hidden><div class="spin"></div><span id="loader-text"></span></div>
+</div>
+
+<input type="file" id="file-photo" accept="image/*" capture="environment" hidden>
+<input type="file" id="file-import" accept="application/json,.json" hidden>
+<input type="file" id="file-body-photo" accept="image/*" capture="environment" hidden>
+
+<!-- Boot watchdog: never leave the user staring at a blank page. -->
+<div id="boot-fail" hidden style="position:fixed;inset:0;z-index:200;background:#0b0d10;color:#e9edf2;
+     padding:32px 22px;font:15px/1.9 'Segoe UI',Tahoma,system-ui,sans-serif;overflow:auto">
+  <h2 style="font-size:19px;margin:0 0 10px">اپ بالا نیامد / App failed to start</h2>
+  <p id="boot-fail-msg" style="color:#9aa5b4;margin:0 0 18px"></p>
+  <pre id="boot-fail-detail" style="white-space:pre-wrap;word-break:break-word;background:#161b22;
+       border:1px solid #252c36;border-radius:12px;padding:12px;font-size:12px;color:#ff6b6b;direction:ltr"></pre>
+  <button onclick="location.reload()" style="margin-top:16px;background:#3ddc84;color:#07130c;border:0;
+          border-radius:12px;padding:13px 20px;font:600 15px inherit;width:100%">تلاش مجدد / Reload</button>
+  <button id="boot-fail-reset" style="margin-top:10px;background:transparent;color:#ff6b6b;
+          border:1px solid #3a2b2b;border-radius:12px;padding:13px 20px;font:15px inherit;width:100%">
+    پاک کردن کش و تلاش مجدد / Clear cache &amp; reload</button>
+</div>
+
+<script src="./js/boot.js"></script>
+
+<script type="module" src="./js/app.js"></script>
+<script src="./js/boot-check.js"></script>
+</body>
+</html>
