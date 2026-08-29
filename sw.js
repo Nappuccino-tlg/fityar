@@ -1,5 +1,5 @@
 /* ============ FitYar service worker — offline shell ============ */
-const VERSION = 'fityar-v21';
+const VERSION = 'fityar-v24';
 const SHELL = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const SHELL = [
   './js/ui.js',
   './js/i18n.js',
   './js/store.js',
+  './js/config.js',
   './js/ai.js',
   './js/nutrition.js',
   './js/workouts.js',

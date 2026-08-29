@@ -173,6 +173,15 @@ export function openAISettings() {
   fillModels(ai.ENDPOINT_PRESETS.find(p => p.url && S.settings.baseUrl?.startsWith(p.url)));
 
   /* --- provider-specific panes --- */
+  const proxyPane = el('div', {},
+    el('div', { class: 'info' }, t('proxyHelp')),
+    field(t('proxyUrl'), urlIn),
+    field(t('model'), modelIn),
+    el('div', { class: 'chips' },
+      el('span', { class: 'chip on' }, '🔒 ' + t('noKeyNeeded'))),
+    el('div', { class: 'info' }, t('proxySetup')),
+  );
+
   const geminiPane = el('div', {},
     el('div', { class: 'info', html: '<ol style="margin:0;padding-inline-start:18px;line-height:2">' +
       (fa ? [
@@ -207,7 +216,13 @@ export function openAISettings() {
   );
 
   const paneHost = el('div', {});
-  const syncPane = () => paneHost.replaceChildren(provider === 'openai' ? openaiPane : geminiPane);
+  const keyField = field(t('apiKey'),
+    el('div', { style: 'display:flex;gap:8px;align-items:center' }, keyIn, showBtn));
+  const syncPane = () => {
+    paneHost.replaceChildren(
+      provider === 'proxy' ? proxyPane : provider === 'openai' ? openaiPane : geminiPane);
+    keyField.hidden = provider === 'proxy';     // the server holds it, not the phone
+  };
 
   const provSeg = segmented(
     ai.PROVIDERS.map(p => ({ value: p.id, label: fa ? p.nameFa : p.name })),
@@ -219,15 +234,15 @@ export function openAISettings() {
   /* --- current config from the form --- */
   const cfg = () => ({
     provider,
-    key: keyIn.value.trim(),
-    model: (provider === 'openai' ? modelIn.value : geminiModel.value).trim(),
+    key: provider === 'proxy' ? '' : keyIn.value.trim(),
+    model: (provider === 'gemini' ? geminiModel.value : modelIn.value).trim(),
     baseUrl: urlIn.value.trim(),
   });
 
   const runTest = async (withImage) => {
     const c = cfg();
-    if (!c.key) return toast(t('noKey'), 'err');
-    if (provider === 'openai' && !c.baseUrl) return toast(fa ? 'Base URL خالی است' : 'Base URL is empty', 'err');
+    if (provider !== 'proxy' && !c.key) return toast(t('noKey'), 'err');
+    if (provider !== 'gemini' && !c.baseUrl) return toast(fa ? 'آدرس سرور خالی است' : 'Server URL is empty', 'err');
     status.style.color = 'var(--tx2)';
     status.textContent = t('loading');
     try {
@@ -245,7 +260,7 @@ export function openAISettings() {
   const body = el('div', {},
     el('div', { class: 'field' }, el('label', {}, t('provider')), provSeg),
     paneHost,
-    field(t('apiKey'), el('div', { style: 'display:flex;gap:8px;align-items:center' }, keyIn, showBtn)),
+    keyField,
     el('label', { style: 'display:flex;align-items:center;gap:10px;margin-bottom:14px;cursor:pointer' },
       keepPhotos, el('span', {}, fa ? 'نگهداری عکس وعده‌ها روی دستگاه' : 'Keep meal photos on device')),
     el('div', { class: 'info' }, t('apiHelp')),

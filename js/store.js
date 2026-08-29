@@ -1,6 +1,7 @@
 /* ============ App state: settings, profile, goals, derived math ============ */
 import * as db from './db.js';
 import { round, clamp, todayKey } from './ui.js';
+import { PROXY_URL, PROXY_MODEL } from './config.js';
 
 export const DEFAULTS = {
   settings: {
@@ -52,7 +53,19 @@ export const S = {
 };
 
 export async function load() {
-  S.settings = { ...DEFAULTS.settings, ...(await db.metaGet('settings', {})) };
+  const stored = await db.metaGet('settings', null);
+  S.settings = { ...DEFAULTS.settings, ...(stored || {}) };
+
+  /* A build that ships a proxy turns the AI on for anyone who has nothing else
+     working — including people already using the app, whose stored settings say
+     'gemini' with an empty key. Someone who did configure their own provider
+     (a key, or their own base URL) keeps it untouched. */
+  const configuredOwnAI = !!(S.settings.apiKey || S.settings.baseUrl);
+  if (PROXY_URL && !configuredOwnAI) {
+    S.settings.provider = 'proxy';
+    S.settings.baseUrl = PROXY_URL;
+    S.settings.model = PROXY_MODEL;
+  }
   S.profile  = { ...DEFAULTS.profile,  ...(await db.metaGet('profile', {})) };
   S.goals    = { ...DEFAULTS.goals,    ...(await db.metaGet('goals', {})) };
   // keep profile weight synced with the most recent weight log
@@ -75,8 +88,12 @@ export function aiConfig() {
 /** True when the AI features are usable. */
 export function hasAI() {
   const s = S.settings;
-  if (!s.apiKey || !s.model) return false;
-  if ((s.provider || 'gemini') === 'openai') return !!String(s.baseUrl || '').trim();
+  if (!s.model) return false;
+  const p = s.provider || 'gemini';
+  /* the proxy holds the key server-side, so this device needs none */
+  if (p === 'proxy') return !!String(s.baseUrl || '').trim();
+  if (!s.apiKey) return false;
+  if (p === 'openai') return !!String(s.baseUrl || '').trim();
   return true;
 }
 export const saveProfile  = () => db.metaSet('profile', S.profile);

@@ -11,7 +11,8 @@ import { getLang } from './i18n.js';
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 export const PROVIDERS = [
-  { id: 'gemini', name: 'Google Gemini', nameFa: 'گوگل جِمینای' },
+  { id: 'proxy',  name: 'My server',        nameFa: 'سرور من' },
+  { id: 'gemini', name: 'Google Gemini',    nameFa: 'گوگل جِمینای' },
   { id: 'openai', name: 'OpenAI-compatible', nameFa: 'سازگار با OpenAI' },
 ];
 
@@ -90,14 +91,30 @@ function friendly(code, raw) {
                    : 'Could not read the response. Try again or use another model.',
     'model':    fa ? 'این مدل در دسترس نیست. نام مدل را بررسی کنید.'
                    : 'That model is unavailable. Check the model name.',
+    'proxy-origin': fa ? 'سرور واسط این دامنه را نمی‌پذیرد. مقدار ALLOWED در تنظیمات Worker باید دقیقاً آدرس همین اپ باشد.'
+                       : 'The proxy rejected this origin. Its ALLOWED setting must match this app’s address.',
+    'proxy-setup':  fa ? 'سرور واسط هنوز کامل تنظیم نشده است.'
+                       : 'The proxy is not fully configured yet.',
   };
+  /* Unlisted codes (e.g. 'proxy-detail') deliberately fall through to the raw
+     message, which the proxy wrote for this user. */
   return M[code] || raw || (fa ? 'خطای ناشناخته' : 'Unknown error');
 }
 export const aiErrorText = (e) => (e instanceof AIError ? friendly(e.code, e.message) : friendly('network', e?.message));
 
 /** Map an HTTP failure onto one of our codes. */
-function httpError(status, detail = '') {
+function httpError(status, detail = '', viaProxy = false) {
   const d = detail.toLowerCase();
+
+  /* Failures from our own Worker are already written for this user — a generic
+     "check your connection" would hide the one line that says what to fix. */
+  if (viaProxy) {
+    if (status === 403 && /origin/i.test(d)) return new AIError('proxy-origin', detail);
+    if (status === 429) return new AIError('quota', detail);
+    if (/no backend|binding|GEMINI_KEY/i.test(detail)) return new AIError('proxy-setup', detail);
+    if (status >= 500 && detail) return new AIError('proxy-detail', detail);
+  }
+
   if (/location is not supported|user location|not available in your country|unsupported_country|region/i.test(detail))
     return new AIError('geo', detail);
   if (status === 400 && /api[_ ]?key/i.test(detail)) return new AIError('bad-key', detail);
@@ -123,6 +140,17 @@ function parseJSON(text) {
 
 /* ---------------- provider calls ---------------- */
 
+/**
+ * Same wire format as Gemini, but the key lives on the proxy instead of here.
+ * That is the only way a published static page can offer this to everyone
+ * without handing the key to every visitor.
+ */
+async function callProxy(cfg, opts) {
+  const base = String(cfg.baseUrl || '').trim().replace(/\/+$/, '');
+  if (!base) throw new AIError('no-url');
+  return callGemini({ ...cfg, key: null, _base: base }, opts);
+}
+
 async function callGemini(cfg, { parts, schema, temperature, maxTokens }) {
   const body = {
     contents: [{ role: 'user', parts }],
@@ -136,9 +164,14 @@ async function callGemini(cfg, { parts, schema, temperature, maxTokens }) {
     ].map(category => ({ category, threshold: 'BLOCK_ONLY_HIGH' })),
   };
 
+  /* Through the proxy there is no key in the URL — the worker adds it. */
+  const url = cfg._base
+    ? `${cfg._base}/${encodeURIComponent(cfg.model)}:generateContent`
+    : `${GEMINI_BASE}/${encodeURIComponent(cfg.model)}:generateContent?key=${encodeURIComponent(cfg.key)}`;
+
   let r;
   try {
-    r = await fetch(`${GEMINI_BASE}/${encodeURIComponent(cfg.model)}:generateContent?key=${encodeURIComponent(cfg.key)}`, {
+    r = await fetch(url, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
   } catch (e) { throw new AIError('network', e.message); }
@@ -146,7 +179,7 @@ async function callGemini(cfg, { parts, schema, temperature, maxTokens }) {
   if (!r.ok) {
     let detail = '';
     try { detail = (await r.json())?.error?.message || ''; } catch {}
-    throw httpError(r.status, detail);
+    throw httpError(r.status, detail, !!cfg._base);
   }
 
   const j = await r.json();
@@ -211,9 +244,10 @@ async function callOpenAICompat(cfg, { parts, schema, temperature, maxTokens }) 
 
 /** Dispatch to the configured provider. */
 async function call(cfg, opts) {
-  if (!cfg?.key) throw new AIError('no-key');
   if (!cfg?.model) throw new AIError('model');
   const o = { temperature: 0.25, maxTokens: 4096, ...opts };
+  if (cfg.provider === 'proxy') return callProxy(cfg, o);
+  if (!cfg?.key) throw new AIError('no-key');
   return cfg.provider === 'openai' ? callOpenAICompat(cfg, o) : callGemini(cfg, o);
 }
 

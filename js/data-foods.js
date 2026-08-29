@@ -7,8 +7,14 @@
    rather than guessed — run tools/build_recipes.py after editing a recipe.
 ================================================== */
 
+/* Foods you pour rather than weigh. Category alone is not enough — milk and
+   doogh are filed under dairy, so the liquid ones are named explicitly. */
+const LIQUID_IDS = new Set(['d_milk_whole', 'd_milk_low', 'd_doogh']);
+
 const F = (id, name, nameFa, cat, kcal, p, c, fat, fib, servings) =>
-  ({ id, name, nameFa, cat, kcal, p, c, f: fat, fib, servings: servings || null, builtin: true });
+  ({ id, name, nameFa, cat, kcal, p, c, f: fat, fib, servings: servings || null,
+     /* measured by volume — per 100 ml, entered in ml/cc */
+     liquid: cat === 'drink' || LIQUID_IDS.has(id), builtin: true });
 
 export const FOOD_CATS = [
   { id:'all',     name:'All',        nameFa:'همه' },

@@ -4,7 +4,7 @@ import { S, MEAL_KEYS, MEAL_ICON, workoutKcal, aiConfig, hasAI } from './store.j
 import { t, num, pick, getLang } from './i18n.js';
 import {
   $, el, sheet, closeSheet, confirmSheet, toast, loading, field, input, select,
-  round, sum, parseNum, todayKey, dateKey, addDays, dateLabel, shortDate, buzz,
+  segmented, round, sum, parseNum, todayKey, dateKey, addDays, dateLabel, shortDate, buzz,
 } from './ui.js';
 import { FOODS, FOOD_CATS, FOOD_INDEX, searchFoods } from './data-foods.js';
 import { statusOf, STATUS_COLOR, closeDay, reportSheet, getReport } from './report.js';
@@ -56,6 +56,7 @@ export async function addLog(entry) {
     fat: round(entry.fat || 0, 1),
     fiber: round(entry.fiber || 0, 1),
     foodId: entry.foodId || null,
+    liquid: !!entry.liquid,
     photoId: entry.photoId || null,
     source: entry.source || 'db',
     createdAt: Date.now(),
@@ -72,6 +73,11 @@ export async function deleteLog(id) {
     if (!others.length) await db.del('photos', rec.photoId);
   }
 }
+
+/** ml for drinks, g for everything else. Drives every label and input. */
+export const isLiquid = (food) =>
+  food?.liquid !== undefined ? !!food.liquid : food?.cat === 'drink';
+export const unitOf = (food) => (isLiquid(food) ? t('mlUnit') : t('gram'));
 
 /** Scale a per-100 g food record to a gram amount. */
 export function scaleFood(food, grams) {
@@ -184,7 +190,7 @@ function foodRow(it) {
   const row = el('div', { class: 'mrow' },
     el('div', { class: 't' },
       el('b', {}, pick(it)),
-      el('span', {}, `${num(round(it.grams))}g · ${t('protein')} ${num(round(it.protein))} · ${t('carbs')} ${num(round(it.carbs))} · ${t('fat')} ${num(round(it.fat))}`),
+      el('span', {}, `${num(round(it.grams))}${it.liquid ? t('mlUnit') : 'g'} · ${t('protein')} ${num(round(it.protein))} · ${t('carbs')} ${num(round(it.carbs))} · ${t('fat')} ${num(round(it.fat))}`),
     ),
     el('div', { class: 'k' }, num(Math.round(it.kcal))),
   );
@@ -206,7 +212,7 @@ async function openEditLog(it) {
   gEl.oninput = refresh; refresh();
 
   const body = el('div', {},
-    field(t('amount') + ' (' + t('gram') + ')', gEl),
+    field(`${t('amount')} (${it.liquid ? t('mlUnit') : t('gram')})`, gEl),
     field(t('addTo'), mealSel),
     prev,
     el('div', { class: 'btn-row' },
@@ -295,7 +301,7 @@ export async function openFoodPicker(meal = 'snack') {
     res.forEach(f => list.append(el('div', { class: 'li', onclick: () => openPortion(f, meal) },
       el('div', { class: 'li-main' },
         el('b', {}, pick(f)),
-        el('span', {}, `${num(f.kcal)} ${t('kcal')} / 100${t('gram')} · P${num(round(f.p))} C${num(round(f.c))} F${num(round(f.f))}`)),
+        el('span', {}, `${num(f.kcal)} ${t('kcal')} / 100${unitOf(f)} · P${num(round(f.p))} C${num(round(f.c))} F${num(round(f.f))}`)),
       el('div', { class: 'li-end' }, el('b', {}, '+')),
     )));
   }
@@ -320,7 +326,9 @@ export async function openFoodPicker(meal = 'snack') {
 
 /** Portion chooser for a database food. */
 function openPortion(food, meal) {
-  const presets = [['100 ' + t('gram'), 100], ...(food.servings || [])];
+  const liq = isLiquid(food);
+  const unit = unitOf(food);
+  const presets = [[`100 ${unit}`, 100], ...(food.servings || [])];
   const amt = input({ type: 'number', inputmode: 'decimal', value: presets[0][1], step: '1' });
   const out = el('div', { class: 'info' });
 
@@ -337,14 +345,16 @@ function openPortion(food, meal) {
 
   const quick = el('div', { class: 'chips' });
   presets.forEach(([label, g]) => quick.append(el('button', { class: 'chip', onclick: () => { amt.value = g; refresh(); } }, label)));
-  [50, 150, 200, 250, 300].forEach(g => quick.append(el('button', { class: 'chip', onclick: () => { amt.value = g; refresh(); } }, g + 'g')));
+  (liq ? [100, 200, 250, 330, 500] : [50, 150, 200, 250, 300])
+    .forEach(g => quick.append(el('button', { class: 'chip', onclick: () => { amt.value = g; refresh(); } },
+      `${num(g)} ${unit}`)));
 
   const mealSel = select(MEAL_KEYS.map(m => ({ value: m, label: t(m) })), meal);
   refresh();
 
   const body = el('div', {},
     recipeBlock(food, mealSel),
-    field(t('amount') + ' (' + t('gram') + ')', amt),
+    field(`${t('amount')} (${unit})${liq ? ' · ' + t('cc') : ''}`, amt),
     quick, out,
     field(t('addTo'), mealSel),
     el('button', { class: 'btn full', onclick: async () => {
@@ -353,7 +363,8 @@ function openPortion(food, meal) {
       const m = scaleFood(food, g);
       await addLog({
         date: S.date, meal: mealSel.value, name: food.name, nameFa: food.nameFa,
-        grams: g, foodId: food.id, source: food.builtin ? 'db' : 'custom', ...m,
+        grams: g, foodId: food.id, liquid: liq,
+        source: food.builtin ? 'db' : 'custom', ...m,
       });
       closeSheet(); toast(t('done'), 'ok'); buzz(); refreshAll();
     } }, t('add')),
@@ -423,8 +434,22 @@ export function openCreateFood(meal = null, existing = null) {
   const fb = input({ type: 'number', inputmode: 'decimal', value: f.fib ?? '', placeholder: '0' });
   const catSel = select(FOOD_CATS.filter(c => c.id !== 'all').map(c => ({ value: c.id, label: pick(c) })), f.cat || 'iranian');
 
+  /* Drinks are measured by volume, not weight — the whole form has to follow. */
+  let liquid = f.liquid ?? (f.cat === 'drink');
+  const perLabel = el('div', { class: 'info' });
+  const stateSeg = segmented(
+    [{ value: 'solid', label: '🍽️ ' + t('solid') }, { value: 'liquid', label: '🥤 ' + t('liquid') }],
+    liquid ? 'liquid' : 'solid',
+    (v) => {
+      liquid = v === 'liquid';
+      perLabel.textContent = liquid ? t('per100ml') : t('per100');
+      if (liquid && catSel.value !== 'drink') catSel.value = 'drink';
+    });
+  perLabel.textContent = liquid ? t('per100ml') : t('per100');
+
   const body = el('div', {},
-    el('div', { class: 'info' }, t('per100')),
+    el('div', { class: 'field' }, el('label', {}, t('foodState')), stateSeg),
+    perLabel,
     field(t('name') + ' (EN)', nEn),
     field(t('name') + ' (فا)', nFa),
     el('div', { class: 'grid2' },
@@ -445,7 +470,9 @@ export function openCreateFood(meal = null, existing = null) {
         cat: catSel.value,
         kcal: parseNum(kc.value), p: parseNum(pr.value), c: parseNum(cb.value),
         f: parseNum(ft.value), fib: parseNum(fb.value),
-        servings: f.servings || null, builtin: false,
+        liquid,                                  // measured in ml rather than g
+        servings: f.servings || [[liquid ? '۱ لیوان / glass' : '۱ پرس / portion', liquid ? 250 : 100]],
+        builtin: false,
       };
       await db.put('foods', rec);
       closeSheet(); toast(t('saved'), 'ok');
