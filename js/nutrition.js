@@ -636,7 +636,9 @@ function showAIResults(res, meal, blob, originalFile = null) {
     chk.onchange = () => { r.on = chk.checked; card.style.opacity = chk.checked ? '1' : '.45'; recompute(); };
     drawMac();
     const card = el('div', { class: 'ai-item' },
-      el('div', { class: 'top' }, chk, el('b', {}, pick(r)), confChip(r.confidence)),
+      el('div', { class: 'top' }, chk, el('b', {}, pick(r)), confChip(r.confidence),
+        /* say so when the app overruled the model's own calorie figure */
+        r.adjusted ? el('span', { class: 'conf low', title: t('kcalFixedWhy') }, t('kcalFixed')) : null),
       el('div', { style: 'display:flex;align-items:center;gap:9px' },
         el('div', { style: 'width:74px' }, gEl),
         el('span', { class: 'muted', style: 'font-size:11.5px' }, t('gram')),

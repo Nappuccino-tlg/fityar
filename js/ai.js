@@ -322,8 +322,26 @@ export async function analyzeMeal(cfg, { imageB64, mime = 'image/jpeg', hint = '
     kcal: Math.max(0, Math.round(Number(x.kcal) || 0)),
     protein: n(x.protein), carbs: n(x.carbs), fat: n(x.fat), fiber: n(x.fiber),
     confidence: ['high', 'medium', 'low'].includes(x.confidence) ? x.confidence : 'medium',
-  })).filter(x => x.name);
+  })).filter(x => x.name).map(reconcileKcal);
   return { dish: String(data.dish || '').slice(0, 80), items, notes: String(data.notes || '').slice(0, 400) };
+}
+
+/* A model can hand back macros and a calorie count that contradict each other —
+   140 kcal for 10 g protein, 30 g carbs and 5 g fat, which by Atwater is 205.
+   The macros are the sounder half far more often than the calorie figure is, so
+   when the two disagree by more than a quarter we take Atwater's answer and say
+   the confidence is low. Carbohydrate is carbs-by-difference, i.e. it already
+   contains the fibre, which yields about 2 kcal/g rather than 4. */
+const atwater = ({ protein = 0, carbs = 0, fat = 0, fiber = 0 }) =>
+  protein * 4 + Math.max(0, carbs - fiber) * 4 + fat * 9 + fiber * 2;
+
+export function reconcileKcal(item) {
+  const calc = Math.round(atwater(item));
+  if (!item.kcal) return calc ? { ...item, kcal: calc } : item;
+  if (!calc) return item;
+  const off = Math.abs(item.kcal - calc) / Math.max(item.kcal, calc);
+  if (off <= 0.25) return item;
+  return { ...item, kcal: calc, confidence: 'low', adjusted: true };
 }
 
 /* ---------------- text estimate ---------------- */
@@ -350,13 +368,13 @@ User text: """${text}"""`,
   const out = await call(cfg, { parts, schema: TEXT_SCHEMA, temperature: 0.2, maxTokens: 800 });
   const d = parseJSON(out);
   const n = (v) => Math.max(0, Math.round((Number(v) || 0) * 10) / 10);
-  return {
+  return reconcileKcal({
     name: String(d.name || text).slice(0, 80),
     nameFa: String(d.nameFa || d.name || text).slice(0, 80),
     grams: Math.max(1, Math.round(Number(d.grams) || 100)),
     kcal: Math.max(0, Math.round(Number(d.kcal) || 0)),
     protein: n(d.protein), carbs: n(d.carbs), fat: n(d.fat), fiber: n(d.fiber),
-  };
+  });
 }
 
 /* ---------------- plan generation ---------------- */

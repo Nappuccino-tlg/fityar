@@ -3,8 +3,20 @@
    f = [kcal, protein, carbs, fat, fiber]
    u = default serving presets: [label, grams]
    International foods use USDA reference values.
-   Iranian composite dishes are DERIVED from their components in data-recipes.js
-   rather than guessed — run tools/build_recipes.py after editing a recipe.
+
+   A few rows look wrong against a plain 4/4/9 check and are not: USDA applies
+   food-specific factors where the generic ones overestimate. Citrus and its
+   juice carry organic acids, mushrooms carry chitin, and most of wheat bran's
+   very high fibre is never absorbed. Do not "correct" لیموترش, آب لیموترش,
+   قارچ or سبوس گندم to match the formula — the reference value is the right
+   one and the formula is the approximation.
+   Iranian composite dishes come from two places, and the difference matters:
+     - the twenty in data-recipes.js are DERIVED from their components, so
+       editing a recipe and running tools/build_recipes.py updates them;
+     - the rest are figures for a typical home preparation. They are internally
+       consistent (calories match their own macros) but they are not derived,
+       so a cook who uses more oil will really be eating more than they say.
+   Weigh the components separately when a number has to be right.
 ================================================== */
 
 /* Foods you pour rather than weigh. Category alone is not enough — milk and
@@ -58,6 +70,87 @@ export const FOODS = [
   F('ir_halva',       'Halva',               'حلوا',            'iranian', 392, 3.7, 51.2, 19.6, 0.9, [['1 قاشق / tbsp', 25]]),
   F('ir_sholezard',   'Sholeh Zard',         'شله زرد',         'iranian', 147, 1.3, 30.4, 2.2, 0.2, [['1 کاسه / bowl', 200]]),
 
+  F('ir_koobideh_m', 'Kabab Koobideh (meat only)', 'کباب کوبیده (فقط گوشت)', 'iranian', 245, 18, 1.5, 18.5, 0.2, [['1 سیخ / skewer', 110]]),
+  F('ir_barg', 'Kabab Barg', 'کباب برگ', 'iranian', 211, 27, 1, 11, 0.1, [['1 سیخ / skewer', 180]]),
+  F('ir_soltani', 'Chelo Kabab Soltani', 'چلوکباب سلطانی', 'iranian', 168, 10.5, 15.2, 7.4, 0.5, [['1 پرس / portion', 620]]),
+  F('ir_shishlik', 'Shishlik (lamb chops)', 'شیشلیک', 'iranian', 280, 25, 0, 20, 0, [['1 پرس / portion', 260]]),
+  F('ir_bakhtiari', 'Kabab Bakhtiari', 'کباب بختیاری', 'iranian', 217, 24, 1, 13, 0.1, [['1 سیخ / skewer', 190]]),
+  F('ir_chenjeh', 'Kabab Chenjeh', 'کباب چنجه', 'iranian', 216, 27, 0, 12, 0, [['1 سیخ / skewer', 180]]),
+  F('ir_torsh', 'Kabab Torsh (Gilaki)', 'کباب ترش', 'iranian', 230, 22, 4, 14, 0.6, [['1 سیخ / skewer', 170]]),
+  F('ir_tabei', 'Pan kabab', 'کباب تابه‌ای', 'iranian', 211, 14, 5, 15, 0.8, [['1 پرس / portion', 200]]),
+  F('ir_jujeh_bone', 'Joojeh with bone', 'جوجه کباب با استخوان', 'iranian', 215, 20, 0.8, 14.5, 0.2, [['1 سیخ / skewer', 230]]),
+  F('ir_gheymeh_bad', 'Gheymeh Bademjan', 'قیمه بادمجان', 'iranian', 200, 8.5, 10, 14, 3.0, [['1 پرس خورش / stew only', 270]]),
+  F('ir_bademjan', 'Khoresh Bademjan', 'خورش بادمجان', 'iranian', 181, 8, 8, 13, 2.8, [['1 پرس خورش / stew only', 260]]),
+  F('ir_karafs', 'Khoresh Karafs', 'خورش کرفس', 'iranian', 150, 9, 6, 10, 2.0, [['1 پرس خورش / stew only', 260]]),
+  F('ir_aloo_esfenaj', 'Khoresh Aloo Esfenaj', 'خورش آلو اسفناج', 'iranian', 153, 9, 9, 9, 2.2, [['1 پرس خورش / stew only', 260]]),
+  F('ir_beh', 'Khoresh Beh', 'خورش به', 'iranian', 163, 7.5, 13, 9, 2.5, [['1 پرس خورش / stew only', 260]]),
+  F('ir_mast_khoresh', 'Khoresh Mast (Isfahani)', 'خورش ماست', 'iranian', 172, 7, 18, 8, 0.4, [['1 پرس / portion', 180]]),
+  F('ir_loobia_sabz', 'Khoresh Loobia Sabz', 'خورش لوبیا سبز', 'iranian', 165, 8.5, 8, 11, 2.6, [['1 پرس خورش / stew only', 260]]),
+  F('ir_havij', 'Khoresh Havij', 'خورش هویج', 'iranian', 170, 8, 12, 10, 2.2, [['1 پرس خورش / stew only', 260]]),
+  F('ir_rivas', 'Khoresh Rivas', 'خورش ریواس', 'iranian', 154, 9, 7, 10, 2.0, [['1 پرس خورش / stew only', 260]]),
+  F('ir_bamieh_kh', 'Khoresh Bamieh', 'خورش بامیه', 'iranian', 145, 8, 8, 9, 3.0, [['1 پرس خورش / stew only', 260]]),
+  F('ir_gharch', 'Chicken & mushroom stew', 'خورش قارچ و مرغ', 'iranian', 153, 12, 6, 9, 1.0, [['1 پرس خورش / stew only', 260]]),
+  F('ir_kadoo_kh', 'Khoresh Kadoo', 'خورش کدو', 'iranian', 154, 8, 8, 10, 1.8, [['1 پرس خورش / stew only', 260]]),
+  F('ir_estamboli', 'Estamboli Polo', 'استانبولی پلو', 'iranian', 162, 5, 22, 6, 1.0, [['1 پرس / portion', 380]]),
+  F('ir_loobia_polo', 'Loobia Polo', 'لوبیا پلو', 'iranian', 168, 6.5, 22, 6, 1.5, [['1 پرس / portion', 390]]),
+  F('ir_kalam_polo', 'Kalam Polo', 'کلم پلو', 'iranian', 158, 6, 20, 6, 1.6, [['1 پرس / portion', 390]]),
+  F('ir_sabzi_mahi', 'Sabzi Polo ba Mahi', 'سبزی پلو با ماهی', 'iranian', 175, 9, 20, 6.5, 1.2, [['1 پرس / portion', 400]]),
+  F('ir_adas_polo', 'Adas Polo', 'عدس پلو', 'iranian', 165, 6, 24, 5, 2.0, [['1 پرس / portion', 390]]),
+  F('ir_reshteh_polo', 'Reshteh Polo', 'رشته پلو', 'iranian', 163, 5.5, 24, 5, 1.4, [['1 پرس / portion', 380]]),
+  F('ir_morasa', 'Morasa Polo', 'مرصع پلو', 'iranian', 174, 5, 25, 6, 1.2, [['1 پرس / portion', 400]]),
+  F('ir_shirin_polo', 'Shirin Polo', 'شیرین پلو', 'iranian', 182, 5, 27, 6, 1.3, [['1 پرس / portion', 400]]),
+  F('ir_kateh', 'Kateh (soft rice)', 'کته', 'iranian', 130, 2.7, 28, 0.3, 0.4, [['1 پیمانه / cup', 200]]),
+  F('ir_tahdig', 'Tahdig (rice crust)', 'ته دیگ', 'iranian', 298, 4.5, 34, 16, 0.6, [['1 تکه / piece', 60]]),
+  F('ir_makaroni', 'Iranian macaroni', 'ماکارونی ایرانی', 'iranian', 161, 7, 22, 5, 1.4, [['1 پرس / portion', 350]]),
+  F('ir_koofteh_tab', 'Koofteh Tabrizi', 'کوفته تبریزی', 'iranian', 178, 10, 12, 10, 1.5, [['1 عدد / ball', 300]]),
+  F('ir_koofteh_gh', 'Koofteh Ghelgheli', 'کوفته قلقلی', 'iranian', 188, 12, 8, 12, 0.8, [['1 عدد / ball', 35]]),
+  F('ir_shami', 'Shami', 'شامی', 'iranian', 230, 12, 14, 14, 1.0, [['1 عدد / piece', 90]]),
+  F('ir_kookoo_sib', 'Kookoo Sibzamini', 'کوکو سیب‌زمینی', 'iranian', 206, 5, 15, 14, 1.4, [['1 برش / slice', 110]]),
+  F('ir_kookoo_bad', 'Kookoo Bademjan', 'کوکو بادمجان', 'iranian', 192, 5, 7, 16, 2.0, [['1 برش / slice', 110]]),
+  F('ir_dolmeh_barg', 'Dolmeh Barg-e Mo', 'دلمه برگ مو', 'iranian', 152, 4, 16, 8, 1.6, [['1 عدد / piece', 35]]),
+  F('ir_dolmeh_fel', 'Dolmeh Felfel', 'دلمه فلفل', 'iranian', 144, 6, 12, 8, 1.8, [['1 عدد / piece', 180]]),
+  F('ir_ash_doogh', 'Ash-e Doogh', 'آش دوغ', 'iranian', 83, 4, 10, 3, 1.6, [['1 کاسه / bowl', 350]]),
+  F('ir_ash_shole', 'Ash-e Sholeh Ghalamkar', 'آش شله قلمکار', 'iranian', 111, 5, 16, 3, 3.0, [['1 کاسه / bowl', 380]]),
+  F('ir_ash_jo', 'Ash-e Jo', 'آش جو', 'iranian', 95, 4, 13, 3, 2.2, [['1 کاسه / bowl', 350]]),
+  F('ir_ash_sabzi', 'Ash-e Sabzi', 'آش سبزی', 'iranian', 91, 4, 12, 3, 2.6, [['1 کاسه / bowl', 350]]),
+  F('ir_soup_jo', 'Barley soup', 'سوپ جو', 'iranian', 70, 3, 9, 2.5, 1.2, [['1 کاسه / bowl', 300]]),
+  F('ir_soup_morgh', 'Chicken soup', 'سوپ مرغ', 'iranian', 58, 4, 6, 2, 0.8, [['1 کاسه / bowl', 300]]),
+  F('ir_haleem_bad', 'Haleem Bademjan', 'حلیم بادمجان', 'iranian', 142, 5, 8, 10, 2.4, [['1 پرس / portion', 200]]),
+  F('ir_bozbash', 'Abgoosht Bozbash', 'آبگوشت بزباش', 'iranian', 112, 7.5, 11, 4, 2.4, [['1 پرس / portion', 450]]),
+  F('ir_kalepache', 'Kale Pache', 'کله پاچه', 'iranian', 204, 14, 1, 16, 0, [['1 پرس / portion', 300]]),
+  F('ir_sirabi', 'Sirabi (tripe)', 'سیرابی', 'iranian', 92, 12, 2, 4, 0, [['1 کاسه / bowl', 300]]),
+  F('ir_del_jigar', 'Del-o Jigar (grilled)', 'دل و جگر', 'iranian', 146, 20, 3, 6, 0, [['1 سیخ / skewer', 90]]),
+  F('ir_jigar_morgh', 'Chicken liver', 'جگر مرغ', 'iranian', 167, 24.5, 0.9, 6.5, 0, [['1 سیخ / skewer', 80]]),
+  F('ir_zaban', 'Beef tongue', 'زبان', 'iranian', 271, 22, 0, 20.5, 0, [['1 پرس / portion', 150]]),
+  F('ir_maghz', 'Brain, cooked', 'مغز', 'iranian', 142, 12, 1, 10, 0, [['1 پرس / portion', 120]]),
+  F('ir_nimroo', 'Nimroo (fried eggs)', 'نیمرو', 'iranian', 187, 12, 1, 15, 0, [['۲ تخم‌مرغ / 2 eggs', 120]]),
+  F('ir_omelet', 'Tomato omelette', 'املت گوجه', 'iranian', 156, 8, 4, 12, 0.7, [['1 پرس / portion', 220]]),
+  F('ir_khagineh', 'Khagineh', 'خاگینه', 'iranian', 225, 7, 20, 13, 0.3, [['1 پرس / portion', 120]]),
+  F('ir_sarshir', 'Sarshir (clotted cream)', 'سرشیر', 'iranian', 384, 3, 3, 40, 0, [['1 قاشق / tbsp', 20]]),
+  F('ir_khameh_sob', 'Breakfast cream', 'خامه صبحانه', 'iranian', 294, 2.5, 3.5, 30, 0, [['1 ظرف / tub', 100]]),
+  F('ir_naan_panir', 'Bread, cheese & walnut', 'نان و پنیر و گردو', 'iranian', 320, 12, 28, 18, 2.2, [['1 وعده / serving', 120]]),
+  F('ir_torshi', 'Torshi (pickles)', 'ترشی', 'iranian', 30, 1, 6, 0.5, 1.6, [['1 قاشق / tbsp', 25]]),
+  F('ir_zeytoon_par', 'Zeytoon Parvardeh', 'زیتون پرورده', 'iranian', 230, 2.5, 9, 21, 3.0, [['1 قاشق / tbsp', 25]]),
+  F('ir_olvieh', 'Salad Olvieh', 'سالاد الویه', 'iranian', 245, 7, 12, 19, 1.2, [['1 پرس / portion', 200]]),
+  F('ir_mast_musir', 'Mast-o Musir', 'ماست موسیر', 'iranian', 95, 3, 5, 7, 0.3, [['1 قاشق / tbsp', 25]]),
+  F('ir_borani', 'Borani Bademjan', 'بورانی بادمجان', 'iranian', 120, 3, 7, 9, 1.8, [['1 پرس / portion', 180]]),
+  F('ir_borani_esf', 'Borani Esfenaj', 'بورانی اسفناج', 'iranian', 95, 3.5, 5, 7, 1.4, [['1 پرس / portion', 180]]),
+  F('ir_falafel', 'Falafel balls', 'فلافل', 'iranian', 333, 13, 32, 18, 4.9, [['1 عدد / ball', 20]]),
+  F('ir_s_falafel', 'Falafel sandwich', 'ساندویچ فلافل', 'iranian', 238, 7, 30, 10, 3.5, [['1 عدد / sandwich', 280]]),
+  F('ir_s_kalbas', 'Cold-cut sandwich', 'ساندویچ کالباس', 'iranian', 252, 11, 25, 12, 1.5, [['1 عدد / sandwich', 220]]),
+  F('ir_s_bandari', 'Sosis Bandari sandwich', 'ساندویچ سوسیس بندری', 'iranian', 266, 9, 26, 14, 1.8, [['1 عدد / sandwich', 250]]),
+  F('ir_s_burger', 'Hamburger sandwich', 'ساندویچ همبرگر', 'iranian', 261, 12, 24, 13, 1.6, [['1 عدد / sandwich', 250]]),
+  F('ir_s_morgh', 'Chicken sandwich', 'ساندویچ مرغ', 'iranian', 233, 14, 24, 9, 1.4, [['1 عدد / sandwich', 250]]),
+  F('ir_s_kotlet', 'Kotlet sandwich', 'ساندویچ کتلت', 'iranian', 252, 10, 26, 12, 1.6, [['1 عدد / sandwich', 240]]),
+  F('ir_s_zaban', 'Tongue sandwich', 'ساندویچ زبان', 'iranian', 271, 12, 22, 15, 1.2, [['1 عدد / sandwich', 230]]),
+  F('ir_shawarma', 'Shawarma', 'شاورما', 'iranian', 260, 14, 24, 12, 1.5, [['1 عدد / sandwich', 280]]),
+  F('ir_pizza', 'Pizza, mixed', 'پیتزا', 'iranian', 263, 11, 30, 11, 2.0, [['1 برش / slice', 120]]),
+  F('ir_samboseh', 'Samboseh', 'سمبوسه', 'iranian', 279, 6, 30, 15, 2.0, [['1 عدد / piece', 60]]),
+  F('ir_nugget', 'Chicken nuggets', 'ناگت مرغ', 'iranian', 286, 15, 16, 18, 1.0, [['1 عدد / piece', 20]]),
+  F('ir_fries', 'French fries', 'سیب‌زمینی سرخ‌کرده', 'iranian', 312, 3.4, 41, 15, 3.8, [['1 پرس / portion', 150]]),
+  F('ir_hotdog', 'Hot dog', 'هات داگ', 'iranian', 275, 11, 24, 15, 1.2, [['1 عدد / piece', 150]]),
+  F('ir_fried_chicken', 'Fried chicken', 'مرغ سوخاری', 'iranian', 280, 22, 12, 16, 0.6, [['1 تکه / piece', 120]]),
+
   /* ---------- Protein ---------- */
   F('p_chicken_br',   'Chicken breast, cooked', 'سینه مرغ پخته', 'protein', 165, 31, 0, 3.6, 0, [['1 fillet', 170]]),
   F('p_chicken_th',   'Chicken thigh, cooked',  'ران مرغ پخته',  'protein', 209, 26, 0, 10.9, 0, [['1 thigh', 120]]),
@@ -77,6 +170,23 @@ export const FOODS = [
   F('p_kidney_bean',  'Kidney beans, cooked',   'لوبیا قرمز پخته','protein', 127, 8.7, 23, 0.5, 6.4, [['1 cup', 177]]),
   F('p_white_bean',   'White beans, cooked',    'لوبیا سفید پخته','protein', 139, 9.7, 25, 0.4, 6.3, null),
 
+  F('p_trout', 'Trout, cooked', 'ماهی قزل‌آلا', 'protein', 148, 20.8, 0, 6.6, 0, [['1 فیله / fillet', 150]]),
+  F('p_kilka', 'Kilka fish', 'ماهی کیلکا', 'protein', 158, 20, 0, 8, 0, [['1 پرس / portion', 150]]),
+  F('p_halva_fish', 'Pomfret (halva)', 'ماهی حلوا', 'protein', 130, 20, 0, 5.5, 0, [['1 فیله / fillet', 150]]),
+  F('p_shir_fish', 'King mackerel (shir)', 'ماهی شیر', 'protein', 158, 22, 0, 7, 0, [['1 فیله / fillet', 150]]),
+  F('p_tilapia', 'Tilapia', 'ماهی تیلاپیا', 'protein', 128, 26, 0, 2.7, 0, [['1 فیله / fillet', 150]]),
+  F('p_tuna_oil', 'Tuna, canned in oil', 'تن ماهی در روغن', 'protein', 198, 24, 0, 11, 0, [['1 قوطی / can', 120]]),
+  F('p_sausage', 'Sausage', 'سوسیس', 'protein', 290, 11, 6, 25, 0, [['1 عدد / piece', 60]]),
+  F('p_kalbas', 'Cold cuts (kalbas)', 'کالباس', 'protein', 270, 13, 5, 22, 0, [['1 برش / slice', 20]]),
+  F('p_burger_raw', 'Hamburger patty, raw', 'همبرگر خام', 'protein', 250, 15, 8, 18, 0.5, [['1 عدد / patty', 80]]),
+  F('p_quail', 'Quail, cooked', 'بلدرچین', 'protein', 227, 25, 0, 14, 0, [['1 عدد / bird', 110]]),
+  F('p_quail_egg', 'Quail egg', 'تخم بلدرچین', 'protein', 158, 13, 0.4, 11, 0, [['1 عدد / egg', 9]]),
+  F('p_camel', 'Camel meat', 'گوشت شتر', 'protein', 160, 22, 0, 8, 0, null),
+  F('p_beef_liver', 'Beef liver, cooked', 'جگر گوساله', 'protein', 175, 26, 5, 5, 0, [['1 پرس / portion', 120]]),
+  F('p_kidney', 'Kidney, cooked', 'قلوه', 'protein', 157, 27, 0.3, 4.7, 0, [['1 پرس / portion', 120]]),
+  F('p_chicken_wing', 'Chicken wings', 'بال مرغ', 'protein', 203, 30.5, 0, 8.1, 0, [['1 عدد / wing', 34]]),
+  F('p_chicken_whole', 'Chicken, whole cooked', 'مرغ کامل پخته', 'protein', 239, 27, 0, 14, 0, [['1 پرس / portion', 200]]),
+
   /* ---------- Grains & starch ---------- */
   F('g_rice_white',   'White rice, cooked',   'برنج سفید پخته',  'grain', 130, 2.7, 28, 0.3, 0.4, [['1 cup', 158], ['1 پیمانه', 200]]),
   F('g_rice_brown',   'Brown rice, cooked',   'برنج قهوه‌ای پخته','grain', 123, 2.7, 26, 1, 1.6, [['1 cup', 195]]),
@@ -90,6 +200,20 @@ export const FOODS = [
   F('g_corn',         'Corn, cooked',         'ذرت',             'grain', 96, 3.4, 21, 1.5, 2.4, null),
   F('g_couscous',     'Couscous, cooked',     'کوسکوس',          'grain', 112, 3.8, 23, 0.2, 1.4, null),
   F('g_barley',       'Barley, cooked',       'جو پرک پخته',     'grain', 123, 2.3, 28, 0.4, 3.8, null),
+
+  F('g_bread_barley', 'Barley bread', 'نان جو', 'grain', 246, 8, 48, 2.5, 5.5, [['1 برش / slice', 40]]),
+  F('g_baguette', 'Baguette', 'نان باگت', 'grain', 274, 9, 52, 3, 2.3, [['1 عدد / piece', 120]]),
+  F('g_toast', 'Toast bread', 'نان تست', 'grain', 265, 9, 49, 3.2, 2.7, [['1 برش / slice', 28]]),
+  F('g_burger_bun', 'Burger bun', 'نان همبرگر', 'grain', 279, 9.6, 50, 4.5, 2.2, [['1 عدد / bun', 70]]),
+  F('g_pasta_dry', 'Pasta, dry', 'ماکارونی خشک', 'grain', 371, 13, 75, 1.5, 3.2, [['1 بسته / pack', 500]]),
+  F('g_reshteh_ash', 'Ash noodles', 'رشته آش', 'grain', 348, 12, 71, 1.4, 3.0, [['1 مشت / handful', 50]]),
+  F('g_bulgur', 'Bulgur, dry', 'بلغور', 'grain', 342, 12.3, 76, 1.3, 18, [['1 پیمانه / cup', 140]]),
+  F('g_wheat_cooked', 'Wheat, cooked', 'گندم پخته', 'grain', 124, 5, 26, 0.5, 4.0, [['1 کاسه / bowl', 180]]),
+  F('g_bran', 'Wheat bran', 'سبوس گندم', 'grain', 216, 15.5, 64.5, 4.3, 42.8, [['1 قاشق / tbsp', 8]]),
+  F('g_flour', 'White flour', 'آرد سفید', 'grain', 364, 10.3, 76, 1, 2.7, [['1 پیمانه / cup', 125]]),
+  F('g_cornflakes', 'Corn flakes', 'کورن فلکس', 'grain', 357, 7.5, 84, 0.4, 3.3, [['1 کاسه / bowl', 30]]),
+  F('g_granola', 'Granola', 'گرانولا', 'grain', 471, 10, 64, 20, 7.0, [['1 کاسه / bowl', 55]]),
+  F('g_rusk', 'Rusk / dry toast', 'نان سوخاری', 'grain', 395, 13, 72, 5, 4.5, [['1 عدد / piece', 10]]),
 
   /* ---------- Dairy ---------- */
   F('d_milk_whole',   'Milk, whole 3%',       'شیر پرچرب',       'dairy', 61, 3.2, 4.8, 3.3, 0, [['1 لیوان / glass', 240]]),
@@ -105,6 +229,13 @@ export const FOODS = [
   F('d_doogh',        'Doogh',                'دوغ',             'drink', 34, 1.8, 2.6, 1.7, 0, [['1 لیوان / glass', 250]]),
   F('d_butter',       'Butter',               'کره',             'fat', 717, 0.9, 0.1, 81, 0, [['1 tbsp', 14]]),
   F('d_cream',        'Cream (heavy)',        'خامه',            'fat', 340, 2.1, 2.8, 36, 0, [['1 tbsp', 15]]),
+
+  F('d_lighvan', 'Lighvan cheese', 'پنیر لیقوان', 'dairy', 292, 17, 2, 24, 0, [['1 برش / slice', 30]]),
+  F('d_cream_cheese', 'Cream cheese', 'پنیر خامه‌ای', 'dairy', 342, 6, 4, 34, 0, [['1 قاشق / tbsp', 15]]),
+  F('d_mozzarella', 'Mozzarella (pizza cheese)', 'پنیر پیتزا', 'dairy', 300, 22, 2.2, 22, 0, [['1 مشت / handful', 30]]),
+  F('d_yogurt_full', 'Yogurt, full fat', 'ماست پرچرب', 'dairy', 88, 3.3, 4.5, 6, 0, [['1 کاسه / bowl', 170]]),
+  F('d_chekideh', 'Strained yogurt', 'ماست چکیده', 'dairy', 130, 8, 4, 9, 0, [['1 قاشق / tbsp', 25]]),
+  F('d_milk_powder', 'Milk powder', 'شیر خشک', 'dairy', 496, 26, 38, 27, 0, [['1 قاشق / tbsp', 12]]),
 
   /* ---------- Vegetables ---------- */
   F('v_tomato',       'Tomato',      'گوجه فرنگی',  'veg', 18, 0.9, 3.9, 0.2, 1.2, [['1 medium', 123]]),
@@ -123,6 +254,31 @@ export const FOODS = [
   F('v_garlic',       'Garlic',      'سیر',         'veg', 149, 6.4, 33, 0.5, 2.1, [['1 clove', 3]]),
   F('v_herbs',        'Fresh herbs (sabzi)', 'سبزی خوردن', 'veg', 30, 2.5, 4.5, 0.5, 3, null),
 
+  F('v_pumpkin', 'Pumpkin', 'کدو حلوایی', 'veg', 26, 1, 6.5, 0.1, 0.5, [['1 کاسه / bowl', 116]]),
+  F('v_turnip', 'Turnip', 'شلغم', 'veg', 28, 0.9, 6.4, 0.1, 1.8, [['1 عدد / piece', 122]]),
+  F('v_beet', 'Beetroot, cooked', 'چغندر', 'veg', 44, 1.7, 10, 0.2, 2.0, [['1 عدد / piece', 82]]),
+  F('v_cabbage', 'Cabbage', 'کلم برگ', 'veg', 25, 1.3, 5.8, 0.1, 2.5, [['1 کاسه / bowl', 89]]),
+  F('v_redcabbage', 'Red cabbage', 'کلم قرمز', 'veg', 31, 1.4, 7.4, 0.2, 2.1, [['1 کاسه / bowl', 89]]),
+  F('v_radish', 'Radish', 'تربچه', 'veg', 16, 0.7, 3.4, 0.1, 1.6, [['1 عدد / piece', 5]]),
+  F('v_basil', 'Basil', 'ریحان', 'veg', 23, 3.2, 2.6, 0.6, 1.6, [['1 مشت / handful', 20]]),
+  F('v_parsley', 'Parsley', 'جعفری', 'veg', 36, 3, 6.3, 0.8, 3.3, [['1 مشت / handful', 20]]),
+  F('v_coriander', 'Coriander', 'گشنیز', 'veg', 23, 2.1, 3.7, 0.5, 2.8, [['1 مشت / handful', 20]]),
+  F('v_dill', 'Dill', 'شوید', 'veg', 43, 3.5, 7, 1.1, 2.1, [['1 مشت / handful', 20]]),
+  F('v_mint', 'Mint', 'نعناع', 'veg', 44, 3.3, 8.4, 0.7, 6.8, [['1 مشت / handful', 20]]),
+  F('v_scallion', 'Spring onion', 'پیازچه', 'veg', 32, 1.8, 7.3, 0.2, 2.6, [['1 عدد / piece', 15]]),
+  F('v_leek', 'Leek', 'تره‌فرنگی', 'veg', 61, 1.5, 14.2, 0.3, 1.8, [['1 عدد / piece', 89]]),
+  F('v_okra', 'Okra', 'بامیه (سبزی)', 'veg', 33, 1.9, 7.5, 0.2, 3.2, [['1 کاسه / bowl', 100]]),
+  F('v_chili', 'Hot pepper', 'فلفل تند', 'veg', 40, 1.9, 8.8, 0.4, 1.5, [['1 عدد / piece', 15]]),
+  F('v_artichoke', 'Artichoke', 'کنگر', 'veg', 47, 3.3, 10.5, 0.2, 5.4, [['1 عدد / piece', 128]]),
+  F('v_celery', 'Celery', 'کرفس', 'veg', 16, 0.7, 3, 0.2, 1.6, [['1 ساقه / stalk', 40]]),
+  F('v_peas', 'Green peas', 'نخود سبز', 'veg', 81, 5.4, 14.5, 0.4, 5.7, [['1 کاسه / bowl', 145]]),
+  F('v_fava', 'Fava beans, cooked', 'باقالا', 'veg', 88, 7.6, 17.6, 0.4, 5.4, [['1 کاسه / bowl', 170]]),
+  F('v_pinto', 'Pinto beans, cooked', 'لوبیا چیتی', 'veg', 143, 9.1, 26, 0.7, 9.0, [['1 کاسه / bowl', 171]]),
+  F('v_splitpea', 'Split peas, cooked', 'لپه', 'veg', 116, 8.3, 20, 0.4, 8.0, [['1 کاسه / bowl', 196]]),
+  F('v_mung', 'Mung beans, cooked', 'ماش', 'veg', 105, 7, 19, 0.4, 7.6, [['1 کاسه / bowl', 202]]),
+  F('v_soy', 'Soybeans, cooked', 'سویا', 'veg', 173, 16.6, 9.9, 9, 6.0, [['1 کاسه / bowl', 172]]),
+  F('v_cornsweet', 'Sweet corn', 'ذرت شیرین', 'veg', 86, 3.2, 19, 1.2, 2.7, [['1 بلال / cob', 90]]),
+
   /* ---------- Fruit ---------- */
   F('fr_apple',   'Apple',       'سیب',        'fruit', 52, 0.3, 14, 0.2, 2.4, [['1 medium', 182]]),
   F('fr_banana',  'Banana',      'موز',        'fruit', 89, 1.1, 23, 0.3, 2.6, [['1 medium', 118]]),
@@ -140,6 +296,36 @@ export const FOODS = [
   F('fr_raisin',  'Raisins',     'کشمش',       'fruit', 299, 3.1, 79, 0.5, 3.7, [['1 قاشق / tbsp', 15]]),
   F('fr_avocado', 'Avocado',     'آووکادو',    'fruit', 160, 2, 8.5, 15, 6.7, [['1/2 medium', 100]]),
 
+  F('fr_persimmon', 'Persimmon', 'خرمالو', 'fruit', 70, 0.6, 18.6, 0.2, 3.6, [['1 عدد / piece', 168]]),
+  F('fr_tangerine', 'Tangerine', 'نارنگی', 'fruit', 53, 0.8, 13.3, 0.3, 1.8, [['1 عدد / piece', 88]]),
+  F('fr_sweetlemon', 'Sweet lemon', 'لیمو شیرین', 'fruit', 43, 0.8, 11, 0.2, 2.8, [['1 عدد / piece', 130]]),
+  F('fr_lemon', 'Lemon', 'لیموترش', 'fruit', 29, 1.1, 9.3, 0.3, 2.8, [['1 عدد / piece', 60]]),
+  F('fr_sour_orange', 'Sour orange', 'نارنج', 'fruit', 34, 0.7, 8.5, 0.2, 2.3, [['1 عدد / piece', 120]]),
+  F('fr_grapefruit', 'Grapefruit', 'گریپ‌فروت', 'fruit', 42, 0.8, 10.7, 0.1, 1.6, [['نصف / half', 123]]),
+  F('fr_plum', 'Plum', 'آلو', 'fruit', 46, 0.7, 11.4, 0.3, 1.4, [['1 عدد / piece', 66]]),
+  F('fr_apricot', 'Apricot', 'زردآلو', 'fruit', 48, 1.4, 11, 0.4, 2.0, [['1 عدد / piece', 35]]),
+  F('fr_nectarine', 'Nectarine', 'شلیل', 'fruit', 44, 1.1, 10.6, 0.3, 1.7, [['1 عدد / piece', 142]]),
+  F('fr_pear', 'Pear', 'گلابی', 'fruit', 57, 0.4, 15.2, 0.1, 3.1, [['1 عدد / piece', 178]]),
+  F('fr_quince', 'Quince', 'به', 'fruit', 57, 0.4, 15.3, 0.1, 1.9, [['1 عدد / piece', 92]]),
+  F('fr_loquat', 'Loquat / medlar', 'ازگیل', 'fruit', 47, 0.4, 12.1, 0.2, 1.7, [['1 عدد / piece', 16]]),
+  F('fr_mulberry', 'Mulberry', 'توت', 'fruit', 43, 1.4, 9.8, 0.4, 1.7, [['1 کاسه / bowl', 140]]),
+  F('fr_black_mul', 'Black mulberry', 'شاه‌توت', 'fruit', 43, 1.4, 9.8, 0.4, 1.7, [['1 کاسه / bowl', 140]]),
+  F('fr_greengage', 'Green plum', 'گوجه سبز', 'fruit', 41, 0.8, 9.5, 0.2, 1.5, [['1 مشت / handful', 60]]),
+  F('fr_sourcherry', 'Sour cherry', 'آلبالو', 'fruit', 50, 1.0, 12.2, 0.3, 1.6, [['1 کاسه / bowl', 155]]),
+  F('fr_fig_fresh', 'Fig, fresh', 'انجیر تازه', 'fruit', 74, 0.8, 19.2, 0.3, 2.9, [['1 عدد / piece', 50]]),
+  F('fr_honeydew', 'Honeydew melon', 'خربزه', 'fruit', 36, 0.5, 9.1, 0.1, 0.8, [['1 برش / slice', 160]]),
+  F('fr_mango', 'Mango', 'انبه', 'fruit', 60, 0.8, 15, 0.4, 1.6, [['1 عدد / piece', 200]]),
+  F('fr_pineapple', 'Pineapple', 'آناناس', 'fruit', 50, 0.5, 13.1, 0.1, 1.4, [['1 برش / slice', 84]]),
+  F('fr_coconut', 'Coconut, fresh', 'نارگیل', 'fruit', 354, 3.3, 15.2, 33.5, 9.0, [['1 تکه / piece', 45]]),
+  F('fr_senjed', 'Oleaster (senjed)', 'سنجد', 'fruit', 315, 6, 70, 1.5, 10, [['1 مشت / handful', 30]]),
+  F('fr_jujube', 'Jujube (annab)', 'عناب', 'fruit', 79, 1.2, 20.2, 0.2, 10, [['1 مشت / handful', 30]]),
+  F('fr_cornel', 'Cornelian cherry', 'زغال‌اخته', 'fruit', 46, 0.4, 12, 0.1, 4.4, [['1 کاسه / bowl', 120]]),
+  F('fr_barberry', 'Barberry, dried', 'زرشک', 'fruit', 320, 3, 74, 1, 10, [['1 قاشق / tbsp', 10]]),
+  F('fr_raspberry', 'Raspberry', 'تمشک', 'fruit', 52, 1.2, 11.9, 0.7, 6.5, [['1 کاسه / bowl', 123]]),
+  F('fr_blueberry', 'Blueberry', 'بلوبری', 'fruit', 57, 0.7, 14.5, 0.3, 2.4, [['1 کاسه / bowl', 148]]),
+  F('fr_prune', 'Prunes', 'آلو خشک', 'fruit', 240, 2.2, 64, 0.4, 7.1, [['1 عدد / piece', 9]]),
+  F('fr_apricot_dry', 'Dried apricot', 'برگه هلو', 'fruit', 241, 3.4, 63, 0.5, 7.3, [['1 عدد / piece', 8]]),
+
   /* ---------- Nuts & seeds ---------- */
   F('n_almond',   'Almonds',       'بادام',      'nut', 579, 21, 22, 50, 12.5, [['10 عدد / nuts', 12]]),
   F('n_walnut',   'Walnuts',       'گردو',       'nut', 654, 15, 14, 65, 6.7, [['1 عدد / half', 8]]),
@@ -153,11 +339,25 @@ export const FOODS = [
   F('n_chia',     'Chia seeds',    'دانه چیا',   'nut', 486, 17, 42, 31, 34, [['1 tbsp', 12]]),
   F('n_sesame',   'Sesame / tahini','ارده',      'nut', 595, 17, 21, 54, 9.3, [['1 tbsp', 15]]),
 
+  F('n_pista_raw', 'Pistachios, unsalted', 'پسته خام', 'nut', 560, 20, 28, 45, 10.3, [['1 مشت / handful', 30]]),
+  F('n_almond_raw', 'Almonds, raw', 'بادام خام', 'nut', 579, 21, 22, 50, 12.5, [['1 مشت / handful', 30]]),
+  F('n_apricot_kernel', 'Apricot kernel', 'مغز زردآلو', 'nut', 520, 20, 20, 44, 9, [['1 مشت / handful', 25]]),
+  F('n_flax', 'Flaxseed', 'بذر کتان', 'nut', 534, 18, 29, 42, 27, [['1 قاشق / tbsp', 10]]),
+  F('n_melon_seed', 'Melon seeds', 'تخمه خربزه', 'nut', 557, 28, 15, 44, 4, [['1 مشت / handful', 25]]),
+  F('n_coconut_dry', 'Desiccated coconut', 'نارگیل خشک', 'nut', 660, 6.9, 24, 64, 16, [['1 قاشق / tbsp', 8]]),
+  F('n_walnut_kernel', 'Walnut kernels', 'مغز گردو', 'nut', 654, 15, 14, 65, 6.7, [['1 مشت / handful', 30]]),
+
   /* ---------- Fats & oils ---------- */
   F('o_olive',    'Olive oil',     'روغن زیتون', 'fat', 884, 0, 0, 100, 0, [['1 tbsp', 14]]),
   F('o_sun',      'Sunflower oil', 'روغن آفتابگردان','fat', 884, 0, 0, 100, 0, [['1 tbsp', 14]]),
   F('o_olives',   'Olives',        'زیتون',      'fat', 115, 0.8, 6, 11, 3.2, [['5 عدد / olives', 20]]),
   F('o_mayo',     'Mayonnaise',    'سس مایونز',  'fat', 680, 1, 0.6, 75, 0, [['1 tbsp', 14]]),
+
+  F('o_ghee', 'Ghee / animal fat', 'روغن حیوانی', 'fat', 900, 0, 0, 100, 0, [['1 قاشق / tbsp', 14]]),
+  F('o_canola', 'Canola oil', 'روغن کانولا', 'fat', 884, 0, 0, 100, 0, [['1 قاشق / tbsp', 14]]),
+  F('o_sesame_oil', 'Sesame oil', 'روغن کنجد', 'fat', 884, 0, 0, 100, 0, [['1 قاشق / tbsp', 14]]),
+  F('o_ketchup', 'Ketchup', 'سس گوجه', 'fat', 101, 1.3, 25, 0.1, 0.3, [['1 قاشق / tbsp', 17]]),
+  F('o_sauce_salad', 'Salad dressing', 'سس سالاد', 'fat', 450, 1, 10, 45, 0, [['1 قاشق / tbsp', 15]]),
 
   /* ---------- Drinks ---------- */
   F('dr_water',   'Water',         'آب',         'drink', 0, 0, 0, 0, 0, [['1 لیوان / glass', 250]]),
@@ -166,6 +366,41 @@ export const FOODS = [
   F('dr_cola',    'Cola',          'نوشابه',     'drink', 42, 0, 10.6, 0, 0, [['1 قوطی / can', 330]]),
   F('dr_juice_o', 'Orange juice',  'آب پرتقال',  'drink', 45, 0.7, 10.4, 0.2, 0.2, [['1 لیوان / glass', 250]]),
   F('dr_energy',  'Energy drink',  'نوشیدنی انرژی','drink', 45, 0, 11, 0, 0, [['1 قوطی / can', 250]]),
+
+  F('dr_doogh_gaz', 'Doogh, carbonated', 'دوغ گازدار', 'drink', 34, 1.8, 2.6, 1.7, 0, [['1 بطری / bottle', 280]]),
+  F('dr_delster', 'Malt drink (Delster)', 'ماءالشعیر (دلستر)', 'drink', 45, 0.3, 11, 0, 0, [['1 قوطی / can', 330]]),
+  F('dr_ablimoo', 'Sharbat Ablimoo', 'شربت آبلیمو', 'drink', 60, 0, 15, 0, 0, [['1 لیوان / glass', 250]]),
+  F('dr_sekanjabin', 'Sekanjabin', 'سکنجبین', 'drink', 80, 0, 20, 0, 0, [['1 لیوان / glass', 250]]),
+  F('dr_bidmeshk', 'Sharbat Bidmeshk', 'شربت بیدمشک', 'drink', 64, 0, 16, 0, 0, [['1 لیوان / glass', 250]]),
+  F('dr_zaferan', 'Saffron sharbat', 'شربت زعفران', 'drink', 72, 0, 18, 0, 0, [['1 لیوان / glass', 250]]),
+  F('dr_albaloo', 'Sour cherry sharbat', 'شربت آلبالو', 'drink', 80, 0, 20, 0, 0, [['1 لیوان / glass', 250]]),
+  F('dr_golab', 'Rosewater sharbat', 'شربت گلاب', 'drink', 64, 0, 16, 0, 0, [['1 لیوان / glass', 250]]),
+  F('dr_khakshir', 'Khakshir drink', 'خاکشیر', 'drink', 48, 0.5, 11, 0.3, 1.0, [['1 لیوان / glass', 250]]),
+  F('dr_tokhm_sharbati', 'Basil seed drink', 'تخم شربتی', 'drink', 40, 0.4, 9, 0.2, 1.2, [['1 لیوان / glass', 250]]),
+  F('dr_havij', 'Carrot juice', 'آب هویج', 'drink', 40, 0.9, 9.3, 0.2, 0.8, [['1 لیوان / glass', 250]]),
+  F('dr_havij_bastani', 'Carrot juice with ice cream', 'آب هویج بستنی', 'drink', 95, 1.8, 17, 2.5, 0.6, [['1 لیوان / glass', 300]]),
+  F('dr_talebi', 'Melon juice', 'آب طالبی', 'drink', 34, 0.6, 8, 0.2, 0.4, [['1 لیوان / glass', 250]]),
+  F('dr_anar', 'Pomegranate juice', 'آب انار', 'drink', 54, 0.15, 13, 0.3, 0.1, [['1 لیوان / glass', 250]]),
+  F('dr_sib', 'Apple juice', 'آب سیب', 'drink', 46, 0.1, 11.3, 0.1, 0.2, [['1 لیوان / glass', 250]]),
+  F('dr_ananas', 'Pineapple juice', 'آب آناناس', 'drink', 53, 0.4, 12.9, 0.1, 0.2, [['1 لیوان / glass', 250]]),
+  F('dr_limoo', 'Lemon juice', 'آب لیموترش', 'drink', 22, 0.4, 6.9, 0.2, 0.3, [['1 قاشق / tbsp', 15]]),
+  F('dr_zereshk', 'Barberry juice', 'آب زرشک', 'drink', 48, 0.4, 11.5, 0.2, 0.3, [['1 لیوان / glass', 250]]),
+  F('dr_juice_box', 'Packaged fruit juice', 'آبمیوه پاکتی', 'drink', 45, 0.3, 11, 0.1, 0.1, [['1 پاکت / carton', 200]]),
+  F('dr_tea_green', 'Green tea', 'چای سبز', 'drink', 1, 0, 0.2, 0, 0, [['1 لیوان / glass', 200]]),
+  F('dr_damnoosh', 'Herbal infusion', 'دمنوش', 'drink', 1, 0, 0.2, 0, 0, [['1 لیوان / glass', 200]]),
+  F('dr_ghahve_turk', 'Turkish coffee', 'قهوه ترک', 'drink', 2, 0.3, 0.3, 0, 0, [['1 فنجان / cup', 80]]),
+  F('dr_nescafe', 'Instant coffee mix (3-in-1)', 'نسکافه ۳ در ۱', 'drink', 81, 1.5, 12, 3, 0.2, [['1 لیوان / glass', 200]]),
+  F('dr_cappuccino', 'Cappuccino', 'کاپوچینو', 'drink', 46, 2.5, 4.5, 2, 0, [['1 فنجان / cup', 180]]),
+  F('dr_hot_choc', 'Hot chocolate', 'شیر کاکائو داغ', 'drink', 90, 3.2, 13, 2.8, 0.8, [['1 لیوان / glass', 250]]),
+  F('dr_milk_choco', 'Chocolate milk', 'شیر کاکائو', 'drink', 77, 3.2, 10.4, 2.5, 0.5, [['1 پاکت / carton', 200]]),
+  F('dr_milk_banana', 'Banana milk', 'شیر موز', 'drink', 82, 3, 12, 2.5, 0.4, [['1 لیوان / glass', 250]]),
+  F('dr_smoothie', 'Fruit smoothie', 'اسموتی میوه', 'drink', 68, 1, 15, 0.5, 1.2, [['1 لیوان / glass', 300]]),
+  F('dr_cola_diet', 'Diet cola', 'نوشابه رژیمی', 'drink', 0.4, 0, 0.1, 0, 0, [['1 قوطی / can', 330]]),
+  F('dr_ice_tea', 'Iced tea', 'آیس‌تی', 'drink', 32, 0, 8, 0, 0, [['1 بطری / bottle', 330]]),
+  F('dr_soda_water', 'Sparkling water', 'آب معدنی گازدار', 'drink', 0, 0, 0, 0, 0, [['1 بطری / bottle', 330]]),
+  F('dr_coconut_w', 'Coconut water', 'آب نارگیل', 'drink', 19, 0.7, 3.7, 0.2, 1.1, [['1 لیوان / glass', 250]]),
+  F('dr_milk_almond', 'Almond milk, unsweetened', 'شیر بادام', 'drink', 24, 0.5, 3, 1.1, 0.4, [['1 لیوان / glass', 240]]),
+  F('dr_yogurt_drink', 'Drinking yogurt', 'ماست نوشیدنی', 'drink', 71, 3.1, 12, 1.2, 0, [['1 بطری / bottle', 200]]),
 
   /* ---------- Snacks & sweets ---------- */
   F('s_choc_dark','Dark chocolate 70%','شکلات تلخ','snack', 598, 7.8, 46, 42.6, 11, [['1 مربع / square', 10]]),
@@ -179,6 +414,48 @@ export const FOODS = [
   F('s_sugar',    'Sugar',         'شکر',        'snack', 387, 0, 100, 0, 0, [['1 tsp', 4]]),
   F('s_jam',      'Jam',           'مربا',       'snack', 278, 0.4, 69, 0.1, 1, [['1 tbsp', 20]]),
 
+  F('sw_gaz', 'Gaz (nougat)', 'گز', 'snack', 435, 5, 70, 15, 1.5, [['1 عدد / piece', 20]]),
+  F('sw_sohan', 'Sohan', 'سوهان', 'snack', 469, 6, 55, 25, 1.2, [['1 عدد / piece', 25]]),
+  F('sw_baghlava', 'Baghlava', 'باقلوا', 'snack', 449, 6, 50, 25, 1.8, [['1 عدد / piece', 30]]),
+  F('sw_nan_berenji', 'Nan-e Berenji', 'نان برنجی', 'snack', 440, 5, 60, 20, 0.8, [['1 عدد / piece', 15]]),
+  F('sw_nan_nokhod', 'Nan-e Nokhodchi', 'نان نخودچی', 'snack', 446, 7, 55, 22, 2.0, [['1 عدد / piece', 10]]),
+  F('sw_nan_chai', 'Nan-e Chai', 'نان چایی', 'snack', 434, 6, 62, 18, 1.4, [['1 عدد / piece', 15]]),
+  F('sw_koloocheh', 'Koloocheh', 'کلوچه', 'snack', 418, 6, 58, 18, 1.6, [['1 عدد / piece', 60]]),
+  F('sw_zoolbia', 'Zoolbia', 'زولبیا', 'snack', 432, 3, 60, 20, 0.5, [['1 عدد / piece', 25]]),
+  F('sw_bamieh', 'Bamieh (sweet)', 'بامیه (شیرینی)', 'snack', 424, 3, 58, 20, 0.5, [['1 عدد / piece', 25]]),
+  F('sw_ranginak', 'Ranginak', 'رنگینک', 'snack', 402, 5, 55, 18, 4.0, [['1 برش / piece', 45]]),
+  F('sw_masghati', 'Masghati', 'مسقطی', 'snack', 267, 0.5, 55, 5, 0.3, [['1 عدد / piece', 30]]),
+  F('sw_pashmak', 'Pashmak', 'پشمک', 'snack', 387, 2, 88, 3, 0.2, [['1 مشت / handful', 25]]),
+  F('sw_noghl', 'Noghl', 'نقل', 'snack', 396, 2, 88, 4, 0.3, [['1 قاشق / tbsp', 15]]),
+  F('sw_ghotab', 'Ghotab', 'قطاب', 'snack', 449, 6, 50, 25, 1.5, [['1 عدد / piece', 25]]),
+  F('sw_shirini_tar', 'Cream pastry', 'شیرینی تر', 'snack', 356, 4, 40, 20, 0.7, [['1 عدد / piece', 55]]),
+  F('sw_shirini_khoshk', 'Dry pastry', 'شیرینی خشک', 'snack', 444, 6, 60, 20, 1.2, [['1 عدد / piece', 20]]),
+  F('sw_cake_yazdi', 'Cake Yazdi', 'کیک یزدی', 'snack', 400, 5, 50, 20, 0.8, [['1 عدد / piece', 55]]),
+  F('sw_halva_ardeh', 'Halva Ardeh', 'حلوا ارده', 'snack', 518, 12, 50, 30, 4.0, [['1 قاشق / tbsp', 20]]),
+  F('sw_shireh', 'Grape syrup', 'شیره انگور', 'snack', 302, 0.5, 75, 0, 0.2, [['1 قاشق / tbsp', 21]]),
+  F('sw_looz', 'Looz-e Nargil', 'لوز نارگیل', 'snack', 434, 4, 55, 22, 3.0, [['1 عدد / piece', 15]]),
+  F('sw_tar_halva', 'Tar Halva', 'تر حلوا', 'snack', 354, 3, 45, 18, 0.6, [['1 قاشق / tbsp', 25]]),
+  F('sw_bastani_sonati', 'Traditional ice cream', 'بستنی سنتی', 'snack', 236, 4, 28, 12, 0.3, [['1 اسکوپ / scoop', 80]]),
+  F('sw_faloodeh', 'Faloodeh', 'فالوده', 'snack', 140, 0.5, 34, 0.2, 0.2, [['1 کاسه / bowl', 180]]),
+  F('sw_ghand', 'Sugar cube', 'قند', 'snack', 387, 0, 100, 0, 0, [['1 حبه / cube', 4]]),
+  F('sw_nabat', 'Nabat', 'نبات', 'snack', 387, 0, 100, 0, 0, [['1 عدد / piece', 8]]),
+  F('sn_pofak', 'Pofak (cheese puffs)', 'پفک', 'snack', 514, 6, 55, 30, 1.5, [['1 بسته / bag', 60]]),
+  F('sn_corn_mex', 'Mexican corn cup', 'ذرت مکزیکی', 'snack', 168, 4, 20, 8, 2.2, [['1 لیوان / cup', 200]]),
+  F('sn_nokhodchi', 'Roasted chickpeas', 'نخودچی', 'snack', 374, 19, 61, 6, 11, [['1 مشت / handful', 30]]),
+  F('sn_tokhme_hend', 'Watermelon seeds', 'تخمه هندوانه', 'snack', 595, 28, 15, 47, 4.0, [['1 مشت / handful', 25]]),
+  F('sn_lavashak', 'Lavashak', 'لواشک', 'snack', 308, 1, 75, 0.5, 3.0, [['1 برگ / sheet', 20]]),
+  F('sn_alucheh', 'Alucheh', 'آلوچه', 'snack', 287, 1, 70, 0.3, 2.5, [['1 مشت / handful', 30]]),
+  F('sn_bargeh', 'Dried apricot (bargeh)', 'برگه زردآلو', 'snack', 241, 3.4, 63, 0.5, 7.3, [['1 عدد / piece', 8]]),
+  F('sn_ghaysi', 'Ghaysi', 'قیسی', 'snack', 241, 3.4, 63, 0.5, 7.3, [['1 عدد / piece', 8]]),
+  F('sn_toot_khoshk', 'Dried mulberry', 'توت خشک', 'snack', 360, 3.4, 88, 0.6, 5.0, [['1 مشت / handful', 30]]),
+  F('sn_choobshoor', 'Pretzel sticks', 'چوب شور', 'snack', 387, 10, 80, 3, 3.0, [['1 بسته / bag', 35]]),
+  F('sn_wafer', 'Wafer', 'ویفر', 'snack', 493, 5, 62, 25, 1.5, [['1 عدد / bar', 35]]),
+  F('sn_pastil', 'Gummy sweets', 'پاستیل', 'snack', 338, 6, 78, 0.2, 0, [['1 بسته / bag', 40]]),
+  F('sn_choc_spread', 'Chocolate spread', 'شکلات صبحانه', 'snack', 531, 6, 57, 31, 3.0, [['1 قاشق / tbsp', 20]]),
+  F('sn_cracker', 'Crackers', 'کراکر', 'snack', 437, 9, 70, 13, 2.5, [['1 بسته / pack', 30]]),
+  F('sn_donut', 'Donut', 'دونات', 'snack', 421, 5, 51, 22, 1.5, [['1 عدد / piece', 60]]),
+  F('sn_croissant', 'Croissant', 'کروسان', 'snack', 406, 8, 46, 21, 2.6, [['1 عدد / piece', 60]]),
+
   /* ---------- Supplements ---------- */
   F('su_whey',    'Whey protein powder','پودر پروتئین وی','supp', 400, 80, 8, 5, 0, [['1 اسکوپ / scoop', 30]]),
   F('su_casein',  'Casein protein',     'کازئین',        'supp', 370, 76, 8, 3, 0, [['1 scoop', 32]]),
@@ -189,11 +466,19 @@ export const FOODS = [
 
 export const FOOD_INDEX = Object.fromEntries(FOODS.map(f => [f.id, f]));
 
-/** Simple fuzzy search across both languages. */
+/** Simple fuzzy search across both languages.
+
+    The cap used to be a flat 80, which quietly truncated every category once
+    the table grew past a hundred rows — picking 'Iranian' showed 80 of 104 with
+    nothing to say the rest existed. A chosen category now lists in full; only
+    the unfiltered 'all' view is capped, and that view is for searching anyway. */
+const CAP = 120;
+
 export function searchFoods(q, list = FOODS, cat = 'all') {
   const s = (q || '').trim().toLowerCase();
-  let pool = cat === 'all' ? list : list.filter(f => f.cat === cat);
-  if (!s) return pool.slice(0, 80);
+  const filtered = cat === 'all';
+  let pool = filtered ? list : list.filter(f => f.cat === cat);
+  if (!s) return filtered ? pool.slice(0, CAP) : pool;
   const norm = (x) => (x || '').toLowerCase()
     .replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/‌/g, ' ');
   const ns = norm(s);
@@ -207,5 +492,5 @@ export function searchFoods(q, list = FOODS, cat = 'all') {
     if (sc) scored.push([sc, f]);
   }
   scored.sort((x, y) => y[0] - x[0]);
-  return scored.slice(0, 80).map(x => x[1]);
+  return scored.slice(0, CAP).map(x => x[1]);
 }

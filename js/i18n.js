@@ -65,6 +65,7 @@ export const STRINGS = {
     noKey:'ابتدا کلید API را در «تنظیمات هوش مصنوعی» وارد کنید.',
     aiResult:'نتیجه تحلیل', addAll:'افزودن همه', retake:'عکس دیگر',
     describeMore:'توضیح بیشتر (اختیاری)', describePh:'مثلاً: برنج ۱ پیمانه، مرغ کبابی…',
+    kcalFixed:'کالری اصلاح شد', kcalFixedWhy:'عدد کالری با درشت‌مغذی‌ها نمی‌خواند؛ از روی پروتئین، کربوهیدرات و چربی دوباره حساب شد.',
     reanalyze:'تحلیل مجدد با توضیح',
     /* food */
     search:'جستجو', searchFood:'جستجوی غذا', recent:'اخیر', myFoodsShort:'غذاهای من',
@@ -264,6 +265,7 @@ export const STRINGS = {
     noKey:'Add your API key in “AI settings” first.',
     aiResult:'Analysis result', addAll:'Add all', retake:'New photo',
     describeMore:'Extra description (optional)', describePh:'e.g. 1 cup rice, grilled chicken…',
+    kcalFixed:'kcal corrected', kcalFixedWhy:'The calorie figure disagreed with the macros, so it was recomputed from protein, carbs and fat.',
     reanalyze:'Re-analyze with note',
     search:'Search', searchFood:'Search food', recent:'Recent', myFoodsShort:'My foods',
     createFood:'Create food', servingSize:'Serving size', amount:'Amount', unit:'Unit',
