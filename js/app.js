@@ -410,8 +410,12 @@ async function boot() {
   await firstRunIfNeeded();
 
   /* service worker — reload once when a newer version takes over, so an
-     updated app never runs half on cached files from the previous version */
-  if ('serviceWorker' in navigator) {
+     updated app never runs half on cached files from the previous version.
+
+     Skipped inside the packaged Android app: there every asset already sits on
+     disk, so a worker would only add a second cache able to serve the previous
+     release's files after an update. The web build is unaffected. */
+  if ('serviceWorker' in navigator && !window.__NO_SW__) {
     try {
       const reg = await navigator.serviceWorker.register('./sw.js');
       if (navigator.serviceWorker.controller) {

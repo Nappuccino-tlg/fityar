@@ -95,6 +95,10 @@ function friendly(code, raw) {
                        : 'The proxy rejected this origin. Its ALLOWED setting must match this app’s address.',
     'proxy-setup':  fa ? 'سرور واسط هنوز کامل تنظیم نشده است.'
                        : 'The proxy is not fully configured yet.',
+    'daily-quota':  fa ? 'ظرفیت رایگان امروز پر شده است. فردا دوباره فعال می‌شود — یا در «تنظیمات هوش مصنوعی» سرویس خودتان را وارد کنید. تا آن موقع می‌توانید غذا را دستی یا با بارکد ثبت کنید.'
+                       : 'Today’s free capacity is used up. It resets tomorrow, or you can add your own service under AI settings. Manual and barcode entry still work.',
+    'rate':         fa ? 'در یک ساعت گذشته درخواست زیادی از این دستگاه فرستاده شده. کمی صبر کنید و دوباره امتحان کنید.'
+                       : 'Too many requests from this device in the past hour. Wait a little and try again.',
   };
   /* Unlisted codes (e.g. 'proxy-detail') deliberately fall through to the raw
      message, which the proxy wrote for this user. */
@@ -103,12 +107,13 @@ function friendly(code, raw) {
 export const aiErrorText = (e) => (e instanceof AIError ? friendly(e.code, e.message) : friendly('network', e?.message));
 
 /** Map an HTTP failure onto one of our codes. */
-function httpError(status, detail = '', viaProxy = false) {
+function httpError(status, detail = '', viaProxy = false, code = '') {
   const d = detail.toLowerCase();
 
   /* Failures from our own Worker are already written for this user — a generic
      "check your connection" would hide the one line that says what to fix. */
   if (viaProxy) {
+    if (code === 'daily-quota' || code === 'rate') return new AIError(code, detail);
     if (status === 403 && /origin/i.test(d)) return new AIError('proxy-origin', detail);
     if (status === 429) return new AIError('quota', detail);
     if (/no backend|binding|GEMINI_KEY/i.test(detail)) return new AIError('proxy-setup', detail);
@@ -177,9 +182,13 @@ async function callGemini(cfg, { parts, schema, temperature, maxTokens }) {
   } catch (e) { throw new AIError('network', e.message); }
 
   if (!r.ok) {
-    let detail = '';
-    try { detail = (await r.json())?.error?.message || ''; } catch {}
-    throw httpError(r.status, detail, !!cfg._base);
+    let detail = '', code = '';
+    try {
+      const e = (await r.json())?.error || {};
+      detail = e.message || '';
+      code = e.code || '';
+    } catch {}
+    throw httpError(r.status, detail, !!cfg._base, code);
   }
 
   const j = await r.json();

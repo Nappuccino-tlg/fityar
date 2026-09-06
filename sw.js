@@ -1,9 +1,10 @@
 /* ============ FitYar service worker — offline shell ============ */
-const VERSION = 'fityar-v26';
+const VERSION = 'fityar-v27';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './privacy.html',
   './css/app.css',
   './js/app.js',
   './js/boot.js',

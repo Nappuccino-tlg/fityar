@@ -2,7 +2,7 @@
 import * as db from './db.js';
 import {
   S, saveSettings, saveProfile, saveGoals, suggestGoals, applyAutoGoals,
-  bmr, tdee, kgToDisp, dispToKg, wUnit, cmToDisp, dispToCm, lUnit, usesTargetWeight,
+  bmr, tdee, kgToDisp, dispToKg, wUnit, cmToDisp, dispToCm, lUnit, usesTargetWeight, hasAI,
 } from './store.js';
 import { t, num, setLang, getLang } from './i18n.js';
 import {
@@ -475,6 +475,15 @@ async function doImport(data, merge, keepSettings = true) {
 
 /* ---------------- about ---------------- */
 
+/** Which engine answers, in words a non-technical reader can check. */
+function aiLabel() {
+  const p = S.settings.provider;
+  if (p === 'proxy') return getLang() === 'fa' ? 'سرویس داخلی اپ' : 'the app’s own service';
+  if (p === 'gemini') return 'Google Gemini';
+  return getLang() === 'fa' ? 'سرویس شخصی شما' : 'your own service';
+}
+
+
 export function openAbout() {
   const body = el('div', {},
     el('div', { style: 'text-align:center;margin-bottom:18px' },
@@ -485,9 +494,14 @@ export function openAbout() {
     el('div', { class: 'info' }, t('aboutText')),
     el('div', { class: 'info' }, t('installTip')),
     el('div', { class: 'warn' }, t('disclaimer')),
-    el('div', { class: 'kv' }, el('span', {}, getLang() === 'fa' ? 'ذخیره‌سازی' : 'Storage'), el('b', {}, 'IndexedDB (local)')),
-    el('div', { class: 'kv' }, el('span', {}, getLang() === 'fa' ? 'هوش مصنوعی' : 'AI'), el('b', {}, 'Google Gemini')),
+    el('div', { class: 'kv' }, el('span', {}, getLang() === 'fa' ? 'داده‌های شما' : 'Your data'), el('b', {}, t('dataStays'))),
+    /* name whichever engine is actually configured — it was hard-coded to
+       Gemini, which stopped being true the day the proxy arrived */
+    el('div', { class: 'kv' }, el('span', {}, getLang() === 'fa' ? 'هوش مصنوعی' : 'AI'),
+      el('b', {}, hasAI() ? aiLabel() : t('aiOff'))),
     el('div', { class: 'kv' }, el('span', {}, getLang() === 'fa' ? 'حالت آفلاین' : 'Offline'), el('b', {}, t('offlineReady'))),
+    el('a', { class: 'btn ghost', style: 'display:block;text-align:center;margin-top:14px',
+              href: './privacy.html', target: '_blank', rel: 'noopener' }, t('privacyLink')),
   );
   sheet(t('about'), body);
 }
