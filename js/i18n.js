@@ -184,6 +184,8 @@ export const STRINGS = {
     itemsCount:'قلم', copied:'کپی شد', quickAdd:'ثبت سریع',
     /* ---- barcode ---- */
     barcode:'بارکد', scanBarcode:'اسکن بارکد', barcodeNew:'این بارکد را نمی‌شناسم',
+    searching:'در حال جست‌وجو…',
+    fromOFF:'مقادیر از پایگاه‌داده‌ی باز Open Food Facts آمده. اگر با برچسب محصول نمی‌خواند، اصلاحش کنید.',
     barcodeBind:'یک بار مقادیرش را وارد کن، دفعه‌ی بعد خودش پر می‌شود',
     barcodeSaved:'بارکد ذخیره شد', barcodeNotSupported:'مرورگر تو اسکن بارکد را پشتیبانی نمی‌کند',
     barcodeCamera:'دوربین را روی بارکد بگیر', myBarcodes:'بارکدهای من',
@@ -393,6 +395,8 @@ export const STRINGS = {
     itemsCount:'items', copied:'Copied', quickAdd:'Quick add',
     /* ---- barcode ---- */
     barcode:'Barcode', scanBarcode:'Scan barcode', barcodeNew:"I don't know this barcode yet",
+    searching:'Searching…',
+    fromOFF:'Values came from the open Open Food Facts database. Correct them if they disagree with the label.',
     barcodeBind:'Enter its values once — next time it fills itself in',
     barcodeSaved:'Barcode saved', barcodeNotSupported:'Your browser cannot scan barcodes',
     barcodeCamera:'Point the camera at the barcode', myBarcodes:'My barcodes',

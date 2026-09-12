@@ -80,33 +80,33 @@ export const FOODS = [
   F('ir_tabei', 'Pan kabab', 'کباب تابه‌ای', 'iranian', 211, 14, 5, 15, 0.8, [['1 پرس / portion', 200]]),
   F('ir_jujeh_bone', 'Joojeh with bone', 'جوجه کباب با استخوان', 'iranian', 215, 20, 0.8, 14.5, 0.2, [['1 سیخ / skewer', 230]]),
   F('ir_gheymeh_bad', 'Gheymeh Bademjan', 'قیمه بادمجان', 'iranian', 200, 8.5, 10, 14, 3.0, [['1 پرس خورش / stew only', 270]]),
-  F('ir_bademjan', 'Khoresh Bademjan', 'خورش بادمجان', 'iranian', 181, 8, 8, 13, 2.8, [['1 پرس خورش / stew only', 260]]),
-  F('ir_karafs', 'Khoresh Karafs', 'خورش کرفس', 'iranian', 150, 9, 6, 10, 2.0, [['1 پرس خورش / stew only', 260]]),
-  F('ir_aloo_esfenaj', 'Khoresh Aloo Esfenaj', 'خورش آلو اسفناج', 'iranian', 153, 9, 9, 9, 2.2, [['1 پرس خورش / stew only', 260]]),
-  F('ir_beh', 'Khoresh Beh', 'خورش به', 'iranian', 163, 7.5, 13, 9, 2.5, [['1 پرس خورش / stew only', 260]]),
+  F('ir_bademjan', 'Khoresh Bademjan', 'خورش بادمجان', 'iranian', 211, 8.5, 6.3, 16.9, 1.9, [['1 پرس خورش / stew only', 260]]),
+  F('ir_karafs', 'Khoresh Karafs', 'خورش کرفس', 'iranian', 154, 8.0, 3.4, 12.1, 1.4, [['1 پرس خورش / stew only', 260]]),
+  F('ir_aloo_esfenaj', 'Khoresh Aloo Esfenaj', 'خورش آلو اسفناج', 'iranian', 148, 8.7, 11.5, 8.2, 2.1, [['1 پرس خورش / stew only', 260]]),
+  F('ir_beh', 'Khoresh Beh', 'خورش به', 'iranian', 152, 7.8, 14.2, 7.4, 2.1, [['1 پرس خورش / stew only', 260]]),
   F('ir_mast_khoresh', 'Khoresh Mast (Isfahani)', 'خورش ماست', 'iranian', 172, 7, 18, 8, 0.4, [['1 پرس / portion', 180]]),
-  F('ir_loobia_sabz', 'Khoresh Loobia Sabz', 'خورش لوبیا سبز', 'iranian', 165, 8.5, 8, 11, 2.6, [['1 پرس خورش / stew only', 260]]),
+  F('ir_loobia_sabz', 'Khoresh Loobia Sabz', 'خورش لوبیا سبز', 'iranian', 130, 8.4, 6.5, 8.4, 2.0, [['1 پرس خورش / stew only', 260]]),
   F('ir_havij', 'Khoresh Havij', 'خورش هویج', 'iranian', 170, 8, 12, 10, 2.2, [['1 پرس خورش / stew only', 260]]),
   F('ir_rivas', 'Khoresh Rivas', 'خورش ریواس', 'iranian', 154, 9, 7, 10, 2.0, [['1 پرس خورش / stew only', 260]]),
-  F('ir_bamieh_kh', 'Khoresh Bamieh', 'خورش بامیه', 'iranian', 145, 8, 8, 9, 3.0, [['1 پرس خورش / stew only', 260]]),
-  F('ir_gharch', 'Chicken & mushroom stew', 'خورش قارچ و مرغ', 'iranian', 153, 12, 6, 9, 1.0, [['1 پرس خورش / stew only', 260]]),
+  F('ir_bamieh_kh', 'Khoresh Bamieh', 'خورش بامیه', 'iranian', 125, 8.2, 6.4, 7.9, 2.1, [['1 پرس خورش / stew only', 260]]),
+  F('ir_gharch', 'Chicken & mushroom stew', 'خورش قارچ و مرغ', 'iranian', 140, 10.9, 2.6, 9.7, 0.6, [['1 پرس خورش / stew only', 260]]),
   F('ir_kadoo_kh', 'Khoresh Kadoo', 'خورش کدو', 'iranian', 154, 8, 8, 10, 1.8, [['1 پرس خورش / stew only', 260]]),
-  F('ir_estamboli', 'Estamboli Polo', 'استانبولی پلو', 'iranian', 162, 5, 22, 6, 1.0, [['1 پرس / portion', 380]]),
-  F('ir_loobia_polo', 'Loobia Polo', 'لوبیا پلو', 'iranian', 168, 6.5, 22, 6, 1.5, [['1 پرس / portion', 390]]),
-  F('ir_kalam_polo', 'Kalam Polo', 'کلم پلو', 'iranian', 158, 6, 20, 6, 1.6, [['1 پرس / portion', 390]]),
-  F('ir_sabzi_mahi', 'Sabzi Polo ba Mahi', 'سبزی پلو با ماهی', 'iranian', 175, 9, 20, 6.5, 1.2, [['1 پرس / portion', 400]]),
-  F('ir_adas_polo', 'Adas Polo', 'عدس پلو', 'iranian', 165, 6, 24, 5, 2.0, [['1 پرس / portion', 390]]),
-  F('ir_reshteh_polo', 'Reshteh Polo', 'رشته پلو', 'iranian', 163, 5.5, 24, 5, 1.4, [['1 پرس / portion', 380]]),
+  F('ir_estamboli', 'Estamboli Polo', 'استانبولی پلو', 'iranian', 180, 6.2, 22.3, 7.2, 1.0, [['1 پرس / portion', 380]]),
+  F('ir_loobia_polo', 'Loobia Polo', 'لوبیا پلو', 'iranian', 153, 6.4, 18.6, 5.9, 1.0, [['1 پرس / portion', 390]]),
+  F('ir_kalam_polo', 'Kalam Polo', 'کلم پلو', 'iranian', 139, 5.4, 17.2, 5.3, 1.0, [['1 پرس / portion', 390]]),
+  F('ir_sabzi_mahi', 'Sabzi Polo ba Mahi', 'سبزی پلو با ماهی', 'iranian', 134, 8.7, 16.0, 3.5, 0.6, [['1 پرس / portion', 400]]),
+  F('ir_adas_polo', 'Adas Polo', 'عدس پلو', 'iranian', 165, 4.2, 27.6, 4.3, 2.5, [['1 پرس / portion', 390]]),
+  F('ir_reshteh_polo', 'Reshteh Polo', 'رشته پلو', 'iranian', 209, 3.8, 38.3, 4.6, 1.4, [['1 پرس / portion', 380]]),
   F('ir_morasa', 'Morasa Polo', 'مرصع پلو', 'iranian', 174, 5, 25, 6, 1.2, [['1 پرس / portion', 400]]),
   F('ir_shirin_polo', 'Shirin Polo', 'شیرین پلو', 'iranian', 182, 5, 27, 6, 1.3, [['1 پرس / portion', 400]]),
   F('ir_kateh', 'Kateh (soft rice)', 'کته', 'iranian', 130, 2.7, 28, 0.3, 0.4, [['1 پیمانه / cup', 200]]),
   F('ir_tahdig', 'Tahdig (rice crust)', 'ته دیگ', 'iranian', 298, 4.5, 34, 16, 0.6, [['1 تکه / piece', 60]]),
-  F('ir_makaroni', 'Iranian macaroni', 'ماکارونی ایرانی', 'iranian', 161, 7, 22, 5, 1.4, [['1 پرس / portion', 350]]),
-  F('ir_koofteh_tab', 'Koofteh Tabrizi', 'کوفته تبریزی', 'iranian', 178, 10, 12, 10, 1.5, [['1 عدد / ball', 300]]),
+  F('ir_makaroni', 'Iranian macaroni', 'ماکارونی ایرانی', 'iranian', 178, 8.4, 23.0, 5.8, 1.6, [['1 پرس / portion', 350]]),
+  F('ir_koofteh_tab', 'Koofteh Tabrizi', 'کوفته تبریزی', 'iranian', 189, 12.9, 11.4, 10.3, 2.1, [['1 عدد / ball', 300]]),
   F('ir_koofteh_gh', 'Koofteh Ghelgheli', 'کوفته قلقلی', 'iranian', 188, 12, 8, 12, 0.8, [['1 عدد / ball', 35]]),
   F('ir_shami', 'Shami', 'شامی', 'iranian', 230, 12, 14, 14, 1.0, [['1 عدد / piece', 90]]),
-  F('ir_kookoo_sib', 'Kookoo Sibzamini', 'کوکو سیب‌زمینی', 'iranian', 206, 5, 15, 14, 1.4, [['1 برش / slice', 110]]),
-  F('ir_kookoo_bad', 'Kookoo Bademjan', 'کوکو بادمجان', 'iranian', 192, 5, 7, 16, 2.0, [['1 برش / slice', 110]]),
+  F('ir_kookoo_sib', 'Kookoo Sibzamini', 'کوکو سیب‌زمینی', 'iranian', 282, 6.4, 24.5, 17.6, 2.0, [['1 برش / slice', 110]]),
+  F('ir_kookoo_bad', 'Kookoo Bademjan', 'کوکو بادمجان', 'iranian', 215, 4.2, 5.3, 19.6, 1.8, [['1 برش / slice', 110]]),
   F('ir_dolmeh_barg', 'Dolmeh Barg-e Mo', 'دلمه برگ مو', 'iranian', 152, 4, 16, 8, 1.6, [['1 عدد / piece', 35]]),
   F('ir_dolmeh_fel', 'Dolmeh Felfel', 'دلمه فلفل', 'iranian', 144, 6, 12, 8, 1.8, [['1 عدد / piece', 180]]),
   F('ir_ash_doogh', 'Ash-e Doogh', 'آش دوغ', 'iranian', 83, 4, 10, 3, 1.6, [['1 کاسه / bowl', 350]]),
@@ -132,8 +132,8 @@ export const FOODS = [
   F('ir_torshi', 'Torshi (pickles)', 'ترشی', 'iranian', 30, 1, 6, 0.5, 1.6, [['1 قاشق / tbsp', 25]]),
   F('ir_zeytoon_par', 'Zeytoon Parvardeh', 'زیتون پرورده', 'iranian', 230, 2.5, 9, 21, 3.0, [['1 قاشق / tbsp', 25]]),
   F('ir_olvieh', 'Salad Olvieh', 'سالاد الویه', 'iranian', 245, 7, 12, 19, 1.2, [['1 پرس / portion', 200]]),
-  F('ir_mast_musir', 'Mast-o Musir', 'ماست موسیر', 'iranian', 95, 3, 5, 7, 0.3, [['1 قاشق / tbsp', 25]]),
-  F('ir_borani', 'Borani Bademjan', 'بورانی بادمجان', 'iranian', 120, 3, 7, 9, 1.8, [['1 پرس / portion', 180]]),
+  F('ir_mast_musir', 'Mast-o Musir', 'ماست موسیر', 'iranian', 83, 3.1, 5.0, 5.3, 0.2, [['1 قاشق / tbsp', 25]]),
+  F('ir_borani', 'Borani Bademjan', 'بورانی بادمجان', 'iranian', 136, 2.5, 6.3, 11.0, 1.2, [['1 پرس / portion', 180]]),
   F('ir_borani_esf', 'Borani Esfenaj', 'بورانی اسفناج', 'iranian', 95, 3.5, 5, 7, 1.4, [['1 پرس / portion', 180]]),
   F('ir_falafel', 'Falafel balls', 'فلافل', 'iranian', 333, 13, 32, 18, 4.9, [['1 عدد / ball', 20]]),
   F('ir_s_falafel', 'Falafel sandwich', 'ساندویچ فلافل', 'iranian', 238, 7, 30, 10, 3.5, [['1 عدد / sandwich', 280]]),
@@ -150,6 +150,58 @@ export const FOODS = [
   F('ir_fries', 'French fries', 'سیب‌زمینی سرخ‌کرده', 'iranian', 312, 3.4, 41, 15, 3.8, [['1 پرس / portion', 150]]),
   F('ir_hotdog', 'Hot dog', 'هات داگ', 'iranian', 275, 11, 24, 15, 1.2, [['1 عدد / piece', 150]]),
   F('ir_fried_chicken', 'Fried chicken', 'مرغ سوخاری', 'iranian', 280, 22, 12, 16, 0.6, [['1 تکه / piece', 120]]),
+
+  /* ---------- regional dishes ----------
+     Added after measuring which searches came back empty. Typical home
+     preparation, per 100 g as served; internally consistent but not
+     derived from weighed components. */
+  F('ir_ghalieh_mahi', 'Ghalieh Mahi (Bandari fish stew)', 'قلیه ماهی', 'iranian', 172, 12.4, 7.3, 10.6, 1.5, [['1 پرس / portion', 300]]),
+  F('ir_ghalieh_meygu', 'Ghalieh Meygu (prawn stew)', 'قلیه میگو', 'iranian', 172, 12.5, 7.7, 10.7, 1.5, [['1 پرس / portion', 300]]),
+  F('ir_meygu_polo', 'Meygu Polo (prawn rice)', 'میگو پلو', 'iranian', 168, 9, 22, 5.5, 1.2, [['1 پرس / portion', 380]]),
+  F('ir_havari', 'Havari (Bandari omelette)', 'حواری', 'iranian', 178, 9, 6, 14, 1.0, [['1 پرس / portion', 200]]),
+  F('ir_baghala_ghatogh', 'Baghala Ghatogh', 'باقلا قاتق', 'iranian', 148, 7.8, 13.1, 7.5, 3.4, [['1 پرس / portion', 280]]),
+  F('ir_torsh_tareh', 'Torsh Tareh', 'ترش تره', 'iranian', 96, 4.5, 8, 5.5, 2.4, [['1 کاسه / bowl', 280]]),
+  F('ir_mirza_ghasemi_r', 'Naz Khatoon', 'ناز خاتون', 'iranian', 112, 2.2, 7, 8.5, 2.2, [['1 پرس / portion', 180]]),
+  F('ir_kabab_torsh_g', 'Waldoon Bij', 'والدون بیج', 'iranian', 205, 6, 9, 16, 2.0, [['1 پرس / portion', 200]]),
+  F('ir_biryani', 'Biryani (Isfahani)', 'بریانی اصفهانی', 'iranian', 268, 16, 14, 17, 1.2, [['1 پرس / portion', 250]]),
+  F('ir_kaleh_joosh', 'Kaleh Joosh', 'کله جوش', 'iranian', 119, 5.6, 12.2, 5.1, 0.6, [['1 کاسه / bowl', 280]]),
+  F('ir_khoresh_mosamma', 'Khoresh Mosamma Bademjan', 'خورش مسما', 'iranian', 181, 8, 8, 13, 2.8, [['1 پرس خورش / stew only', 260]]),
+  F('ir_gheymeh_rizeh', 'Gheymeh Rizeh', 'قیمه ریزه', 'iranian', 196, 10, 10, 13, 1.6, [['1 پرس خورش / stew only', 260]]),
+  F('ir_beryan', 'Beryan', 'بریان', 'iranian', 252, 18, 2, 19, 0.2, [['1 پرس / portion', 220]]),
+  F('ir_kabab_hosseini', 'Kabab Hosseini', 'کباب حسینی', 'iranian', 214, 17, 6, 13.5, 1.0, [['1 سیخ / skewer', 180]]),
+  F('ir_dolmeh_barg_az', 'Dolmeh Azari', 'دلمه آذری', 'iranian', 158, 6, 14, 8.5, 1.8, [['1 عدد / piece', 60]]),
+  F('ir_ash_doogh_az', 'Ash-e Doogh Azari', 'آش دوغ آذری', 'iranian', 86, 4.2, 10, 3.2, 1.6, [['1 کاسه / bowl', 350]]),
+  F('ir_kufteh_shirin', 'Koofteh Shirin', 'کوفته شیرین', 'iranian', 192, 10, 16, 10, 1.4, [['1 عدد / ball', 200]]),
+  F('ir_shole_mashhadi', 'Sholeh Mashhadi', 'شله مشهدی', 'iranian', 138, 7, 14, 5.5, 2.0, [['1 کاسه / bowl', 320]]),
+  F('ir_ash_jo_mashhad', 'Ash-e Ardeh', 'آش ارده', 'iranian', 128, 5, 13, 6, 1.8, [['1 کاسه / bowl', 320]]),
+  F('ir_dizi_sangi', 'Dizi Sangi', 'دیزی سنگی', 'iranian', 116, 8, 11, 4.2, 2.4, [['1 پرس / portion', 450]]),
+  F('ir_khoresh_khalal', 'Khoresh Khalal', 'خورش خلال', 'iranian', 232, 11, 12, 15, 2.2, [['1 پرس خورش / stew only', 260]]),
+  F('ir_dandeh_kabab', 'Dandeh Kabab', 'دنده کباب', 'iranian', 276, 24, 0, 20, 0, [['1 پرس / portion', 250]]),
+  F('ir_ash_reshteh_k', 'Ash-e Doo', 'آش دوو', 'iranian', 92, 4.4, 11, 3.2, 1.6, [['1 کاسه / bowl', 330]]),
+  F('ir_shevid_polo', 'Shevid Baghali Polo', 'شوید باقالی پلو', 'iranian', 137, 3.7, 24.0, 2.7, 1.5, [['1 پرس / portion', 390]]),
+  F('ir_havij_polo', 'Havij Polo', 'هویج پلو', 'iranian', 172, 5.5, 24, 5.8, 1.6, [['1 پرس / portion', 390]]),
+  F('ir_albaloo_polo', 'Albaloo Polo', 'آلبالو پلو', 'iranian', 178, 5.2, 26, 5.6, 1.2, [['1 پرس / portion', 390]]),
+  F('ir_kalam_polo_shz', 'Kalam Polo Shirazi', 'کلم پلو شیرازی', 'iranian', 162, 6.2, 20, 6.2, 1.8, [['1 پرس / portion', 390]]),
+  F('ir_addas_polo_shz', 'Adas Polo with raisins', 'عدس پلو با کشمش', 'iranian', 174, 6, 26, 5, 2.2, [['1 پرس / portion', 390]]),
+  F('ir_dampokhtak', 'Dampokhtak', 'دم‌پختک', 'iranian', 158, 5.5, 22, 5.2, 1.8, [['1 پرس / portion', 360]]),
+  F('ir_kadoo_polo', 'Kadoo Polo', 'کدو پلو', 'iranian', 154, 5, 21, 5.4, 1.6, [['1 پرس / portion', 380]]),
+  F('ir_del_gholveh', 'Del-o Gholveh', 'دل و قلوه', 'iranian', 152, 21, 2, 6.5, 0, [['1 سیخ / skewer', 90]]),
+  F('ir_jigar_goosaleh', 'Jigar (grilled liver)', 'جگر کبابی', 'iranian', 172, 25, 4, 6.4, 0, [['1 سیخ / skewer', 90]]),
+  F('ir_gipa', 'Gipa', 'گیپا', 'iranian', 218, 12, 16, 12, 1.2, [['1 پرس / portion', 220]]),
+  F('ir_torshi_tareh', 'Torshi Tareh (pickled herbs)', 'ترشی تره', 'iranian', 42, 1.4, 6, 1.2, 2.0, [['1 قاشق / tbsp', 25]]),
+  F('ir_torshi_liteh', 'Torshi Liteh', 'ترشی لیته', 'iranian', 58, 1.6, 8, 2.2, 2.4, [['1 قاشق / tbsp', 25]]),
+  F('ir_shoor', 'Khiar Shoor', 'خیارشور', 'iranian', 18, 0.7, 3.2, 0.2, 1.0, [['1 عدد / piece', 40]]),
+  F('ir_morabba_baleng', 'Moraba-ye Baleng', 'مربای بالنگ', 'iranian', 258, 0.4, 64, 0.2, 1.4, [['1 قاشق / tbsp', 20]]),
+  F('sw_sohan_asali', 'Sohan Asali', 'سوهان عسلی', 'iranian', 486, 8, 48, 29, 2.4, [['1 عدد / piece', 20]]),
+  F('sw_koloocheh_fmn', 'Koloocheh Fooman', 'کلوچه فومن', 'iranian', 402, 5.5, 56, 17, 1.8, [['1 عدد / piece', 70]]),
+  F('sw_baslogh', 'Baslogh', 'باسلوق', 'iranian', 364, 2.4, 78, 5.2, 1.0, [['1 عدد / piece', 20]]),
+  F('sw_haj_badam', 'Haji Badam', 'حاجی بادام', 'iranian', 448, 9, 52, 23, 2.6, [['1 عدد / piece', 12]]),
+  F('sw_komaj', 'Komaj Sen', 'کماج', 'iranian', 372, 7, 54, 14, 2.2, [['1 برش / slice', 60]]),
+  F('sw_shirini_keshmeshi', 'Keshmeshi', 'شیرینی کشمشی', 'iranian', 428, 6, 58, 19, 1.4, [['1 عدد / piece', 14]]),
+  F('ir_soup_jo_shir', 'Barley & milk soup', 'سوپ جو شیری', 'iranian', 84, 4, 10, 3, 1.0, [['1 کاسه / bowl', 300]]),
+  F('ir_kachi', 'Kachi', 'کاچی', 'iranian', 296, 3.4, 42, 13, 0.8, [['1 کاسه / bowl', 180]]),
+  F('ir_halim_bademjan_t', 'Tabriz Haleem', 'حلیم تبریزی', 'iranian', 142, 8, 15, 5.4, 2.2, [['1 کاسه / bowl', 300]]),
+  F('ir_nargesi', 'Nargesi Esfenaj', 'نرگسی اسفناج', 'iranian', 134, 7, 5, 10, 1.6, [['1 پرس / portion', 200]]),
 
   /* ---------- Protein ---------- */
   F('p_chicken_br',   'Chicken breast, cooked', 'سینه مرغ پخته', 'protein', 165, 31, 0, 3.6, 0, [['1 fillet', 170]]),
@@ -466,6 +518,106 @@ export const FOODS = [
 
 export const FOOD_INDEX = Object.fromEntries(FOODS.map(f => [f.id, f]));
 
+/* ============================================================================
+   ALIASES — the other names people type
+   ----------------------------------------------------------------------------
+   Measuring the search showed that every branded product it could not find
+   already existed here as a generic food: "ماست میهن" failed while "ماست"
+   was sitting in the table. So these are not new foods, they are the words
+   people actually use for the foods already listed.
+
+   A brand alias deliberately resolves to the generic row. Claiming to know
+   one company's exact label would be inventing a number; saying "that is a
+   full-fat yogurt" is true, and the user can still correct the grams.
+============================================================================ */
+
+export const ALIASES = {
+  /* --- dairy brands --- */
+  d_yogurt:      ['ماست میهن', 'ماست کاله', 'ماست دامداران', 'ماست پگاه', 'ماست رامک', 'ماست صباح'],
+  d_yogurt_full: ['ماست پرچرب میهن', 'ماست سنتی', 'ماست چکه'],
+  d_yogurt_low:  ['ماست کم چرب کاله', 'ماست رژیمی', 'ماست پروبیوتیک'],
+  d_milk_whole:  ['شیر پگاه', 'شیر میهن', 'شیر کاله', 'شیر دامداران', 'شیر پرچرب', 'شیر نایلونی'],
+  d_milk_low:    ['شیر کم چرب پگاه', 'شیر رژیمی', 'شیر بدون لاکتوز'],
+  d_cheese_white:['پنیر کاله', 'پنیر پگاه', 'پنیر میهن', 'پنیر صباح', 'پنیر ورقه ای', 'پنیر تبریز', 'پنیر بلغاری'],
+  d_cheese_feta: ['پنیر فتا کاله', 'پنیر یونانی'],
+  d_mozzarella:  ['پنیر پیتزا کاله', 'موزارلا', 'پنیر ورقه ای پیتزا'],
+  d_cream_cheese:['پنیر خامه ای کاله', 'پنیر صبحانه'],
+  d_lighvan:     ['پنیر لیقوان تبریز', 'پنیر گوسفندی'],
+  d_chekideh:    ['ماست چکیده کاله', 'لبنه'],
+  d_kashk:       ['کشک بطری', 'کشک مایع'],
+  ir_khameh_sob: ['خامه کاله', 'خامه صبحانه میهن', 'خامه پگاه'],
+
+  /* --- drinks --- */
+  dr_cola:       ['کوکا کولا', 'کوکاکولا', 'پپسی', 'زمزم', 'کولا', 'فانتا', 'اسپرایت', 'سون آپ', 'کنزو'],
+  dr_cola_diet:  ['کوکا زیرو', 'پپسی دیت', 'نوشابه بدون قند', 'کولا زیرو'],
+  dr_delster:    ['دلستر بهنوش', 'دلستر', 'ماالشعیر', 'ایستک', 'هوفنبرگ', 'جوجو', 'بهنوش'],
+  dr_juice_box:  ['آبمیوه سن ایچ', 'سن ایچ', 'تکدانه', 'میهن آبمیوه', 'رانی', 'آبمیوه پاکتی', 'نکتار'],
+  d_doogh:       ['دوغ آبعلی', 'دوغ کاله', 'دوغ میهن', 'دوغ عالیس', 'دوغ سنتی'],
+  dr_doogh_gaz:  ['دوغ گازدار آبعلی', 'دوغ گازدار کاله'],
+  dr_ice_tea:    ['آیس تی', 'چای سرد', 'نستله آیس تی', 'لیپتون آیس تی'],
+  dr_nescafe:    ['نسکافه', 'کافی میکس', 'قهوه فوری', 'نسکافه ۳ در ۱', 'هات چاکلت'],
+  dr_milk_choco: ['شیر کاکائو کاله', 'شیر کاکائو میهن', 'پرو شیر کاکائو', 'شیرکاکائو'],
+  dr_tea:        ['چای سیاه', 'چای گلستان', 'چای احمد', 'چای دبش', 'چای کیسه ای'],
+  dr_water:      ['آب معدنی', 'آب آشامیدنی', 'دماوند', 'واتا'],
+
+  /* --- snacks --- */
+  s_chips:       ['چیپس چی توز', 'چی توز', 'چیتوز', 'چیپس مزمز', 'مزمز', 'چیپس لینا', 'چیپس سیب زمینی'],
+  sn_pofak:      ['پفک نمکی', 'پفک مزمز', 'پفک چی توز', 'اسنک', 'موشی موشی', 'لینا پفک'],
+  s_biscuit:     ['بیسکویت مادر', 'بیسکویت ساقه طلایی', 'ساقه طلایی', 'بیسکویت گرجی', 'بیسکویت شیرین عسل',
+                  'بیسکویت پتی بور', 'مینو بیسکویت', 'اورئو'],
+  s_choc_milk:   ['شکلات شیرین عسل', 'شکلات مینو', 'شکلات فرمند', 'شکلات آیدین', 'کیندر', 'شکلات تخته ای'],
+  sn_choc_spread:['نوتلا', 'شکلات صبحانه', 'شکلات صبحانه شیرین عسل', 'کرم کاکائو'],
+  s_cake:        ['کیک هاتی کارا', 'هاتی کارا', 'کیک تی تی', 'کیک دوقلو', 'کیک صبحانه', 'کیک یزدی'],
+  sn_wafer:      ['ویفر شیرین عسل', 'ویفر مینو', 'ویفر آناتا', 'کیت کت'],
+  sn_pastil:     ['پاستیل', 'ژله ای', 'مارشمالو', 'آدامس خرسی'],
+  s_icecream:    ['بستنی میهن', 'بستنی کاله', 'بستنی دومینو', 'بستنی چوبی', 'مگنوم'],
+  sn_nokhodchi:  ['نخودچی کشمش', 'نخودچی آجیل'],
+
+  /* --- packaged staples --- */
+  p_tuna_can:    ['تن ماهی شیلانه', 'تن ماهی طبیعت', 'تن ماهی', 'کنسرو ماهی', 'تون ماهی'],
+  p_tuna_oil:    ['تن ماهی در روغن شیلانه', 'کنسرو تن در روغن'],
+  p_sausage:     ['سوسیس کاله', 'سوسیس میکائیلیان', 'هات داگ سوسیس', 'سوسیس آلمانی'],
+  p_kalbas:      ['کالباس کاله', 'کالباس میکائیلیان', 'کالباس خروس', 'کالباس مرغ'],
+  o_mayo:        ['سس مایونز بهروز', 'مایونز', 'سس مایونز کامچین', 'سس مایونز مهرام'],
+  o_ketchup:     ['سس گوجه بهروز', 'رب گوجه', 'کچاپ', 'سس قرمز'],
+  s_jam:         ['مربا بهروز', 'مربا شانا', 'مربای آلبالو', 'مربای هویج'],
+  s_honey:       ['عسل طبیعی', 'عسل سبلان'],
+  g_pasta_dry:   ['ماکارونی تک ماکارون', 'ماکارونی زر', 'اسپاگتی', 'پاستا', 'فتوچینی'],
+  g_cornflakes:  ['کورن فلکس', 'کرنفلکس', 'صبحانه غلات', 'نستله غلات'],
+  g_rusk:        ['نان سوخاری', 'نان تست خشک'],
+  su_whey:       ['پودر پروتئین', 'وی پروتئین', 'پروتئین ایزوله', 'مکمل پروتئین'],
+
+  /* --- spelling variants and other names for dishes we already have --- */
+  ir_tahchin:    ['تهچین', 'ته چين', 'تahchin'],
+  ir_chelo_kabab:['چلو کباب', 'چلوکباب', 'کباب کوبیده با برنج', 'چلو کباب کوبیده'],
+  ir_koobideh_m: ['کوبیده', 'کباب کوبیده', 'کوبيده'],
+  ir_jujeh_bone: ['جوجه با استخوان', 'جوجه کباب استخوان دار'],
+  ir_ghormeh:    ['قرمه سبزی', 'قورمه', 'خورش سبزی'],
+  ir_gheymeh:    ['قیمه نثار', 'خورش قیمه', 'قيمه'],
+  ir_ash:        ['آش', 'آش رشته نذری'],
+  ir_abgoosht:   ['دیزی', 'آبگوشت بزباش', 'گوشت کوبیده دیزی'],
+  ir_mast_khiar: ['ماست خیار', 'ماست و خیار سنتی'],
+  ir_salad_shir: ['سالاد شیرازی', 'سالاد خیار و گوجه'],
+  ir_sangak:     ['سنگک', 'نان سنگک کنجدی'],
+  ir_barbari:    ['بربری', 'نان بربری کنجدی'],
+  ir_lavash:     ['لواش', 'نان ماشینی'],
+  ir_taftoon:    ['تافتون', 'نان تافتون'],
+  ir_fries:      ['سیب زمینی سرخ شده', 'فرنچ فرایز', 'سیب زمینی سرخ کرده'],
+  ir_s_burger:   ['همبرگر', 'ساندویچ برگر', 'برگر'],
+  ir_pizza:      ['پیتزا مخلوط', 'پیتزا پپرونی', 'پیتزا مرغ'],
+  ir_falafel:    ['فلافل', 'ساندویچ فلافل'],
+};
+
+/* alias -> id, built once. Lets the search match without walking the map. */
+const ALIAS_INDEX = (() => {
+  const out = [];
+  for (const [id, list] of Object.entries(ALIASES)) {
+    for (const a of list) out.push([a, id]);
+  }
+  return out;
+})();
+
+
 /** Simple fuzzy search across both languages.
 
     The cap used to be a flat 80, which quietly truncated every category once
@@ -482,6 +634,20 @@ export function searchFoods(q, list = FOODS, cat = 'all') {
   const norm = (x) => (x || '').toLowerCase()
     .replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/‌/g, ' ');
   const ns = norm(s);
+
+  /* which foods does this query name through an alias? */
+  const viaAlias = new Map();
+  for (const [alias, id] of ALIAS_INDEX) {
+    const na = norm(alias);
+    /* an alias scores below a real name match, so "چیپس" still ranks the food
+       called چیپس above a brand that merely resolves to it */
+    const sc = na.startsWith(ns) || ns.startsWith(na) ? 2.5
+             : na.includes(ns) ? 1.5
+             : ns.split(' ').every(w => na.includes(w)) ? 1.2
+             : 0;
+    if (sc > (viaAlias.get(id) || 0)) viaAlias.set(id, sc);
+  }
+
   const scored = [];
   for (const f of pool) {
     const a = norm(f.name), b = norm(f.nameFa);
@@ -489,6 +655,7 @@ export function searchFoods(q, list = FOODS, cat = 'all') {
     if (a.startsWith(ns) || b.startsWith(ns)) sc = 3;
     else if (a.includes(ns) || b.includes(ns)) sc = 2;
     else if (ns.split(' ').every(w => a.includes(w) || b.includes(w))) sc = 1;
+    sc = Math.max(sc, viaAlias.get(f.id) || 0);
     if (sc) scored.push([sc, f]);
   }
   scored.sort((x, y) => y[0] - x[0]);

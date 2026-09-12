@@ -41,6 +41,49 @@ export const PARTS = {
                  kcal: 110, p: 7.6, c: 19.6, f: 0.4, fib: 5.4 },
   dill:        { fa: 'شوید', en: 'Dill', kcal: 43, p: 3.5, c: 7, f: 1.1, fib: 2.1 },
   walnut:      { fa: 'گردو', en: 'Walnuts', kcal: 654, p: 15, c: 14, f: 65, fib: 6.7 },
+  chicken_stew:{ fa: 'مرغ خورشتی (پخته)', en: 'Stewing chicken, cooked',
+                 kcal: 209, p: 26, c: 0, f: 10.9, fib: 0 },
+  mince_beef:  { fa: 'گوشت چرخ‌کرده (پخته)', en: 'Minced beef, cooked',
+                 kcal: 250, p: 26, c: 0, f: 16, fib: 0 },
+  fish_white:  { fa: 'ماهی سفید (پخته)', en: 'White fish, cooked',
+                 kcal: 105, p: 23, c: 0, f: 1, fib: 0 },
+  prawn:       { fa: 'میگو (پخته)', en: 'Prawns, cooked',
+                 kcal: 99, p: 24, c: 0.2, f: 0.3, fib: 0 },
+  liver_lamb:  { fa: 'جگر (پخته)', en: 'Liver, cooked',
+                 kcal: 175, p: 26, c: 5, f: 5, fib: 0 },
+  tamarind:    { fa: 'تمر هندی', en: 'Tamarind paste',
+                 kcal: 239, p: 2.8, c: 62.5, f: 0.6, fib: 5.1 },
+  coriander_fr:{ fa: 'سبزی قلیه (سرخ‌شده)', en: 'Fried coriander & fenugreek',
+                 kcal: 196, p: 3.0, c: 6.0, f: 18.0, fib: 3.2 },
+  kashk_liq:   { fa: 'کشک مایع', en: 'Liquid kashk',
+                 kcal: 160, p: 14, c: 12, f: 6, fib: 0 },
+  whey_dough:  { fa: 'دوغ / آب‌کشک', en: 'Whey / thin doogh',
+                 kcal: 34, p: 1.8, c: 2.6, f: 1.7, fib: 0 },
+  bread_crumb: { fa: 'نان خشک‌شده', en: 'Dried bread',
+                 kcal: 395, p: 13, c: 72, f: 5, fib: 4.5 },
+  chickpea_fl: { fa: 'آرد نخودچی', en: 'Chickpea flour',
+                 kcal: 387, p: 22, c: 58, f: 6.7, fib: 10.8 },
+  quince:      { fa: 'به', en: 'Quince', kcal: 57, p: 0.4, c: 15.3, f: 0.1, fib: 1.9 },
+  plum_dried:  { fa: 'آلوی خشک', en: 'Dried plum',
+                 kcal: 240, p: 2.2, c: 64, f: 0.4, fib: 7.1 },
+  celery_fr:   { fa: 'کرفس سرخ‌شده', en: 'Fried celery',
+                 kcal: 118, p: 1.0, c: 4.0, f: 11.0, fib: 1.8 },
+  green_bean_c:{ fa: 'لوبیا سبز پخته', en: 'Green beans, cooked',
+                 kcal: 35, p: 1.9, c: 7.9, f: 0.3, fib: 3.0 },
+  okra_cooked: { fa: 'بامیه پخته', en: 'Okra, cooked',
+                 kcal: 33, p: 1.9, c: 7.5, f: 0.2, fib: 3.2 },
+  cabbage_c:   { fa: 'کلم پخته', en: 'Cabbage, cooked',
+                 kcal: 25, p: 1.3, c: 5.8, f: 0.1, fib: 2.5 },
+  vermicelli:  { fa: 'رشته پلویی', en: 'Rice vermicelli, dry',
+                 kcal: 371, p: 13, c: 75, f: 1.5, fib: 3.2 },
+  lentil_ckd:  { fa: 'عدس پخته', en: 'Lentils, cooked',
+                 kcal: 116, p: 9, c: 20, f: 0.4, fib: 7.9 },
+  yogurt_full: { fa: 'ماست پرچرب', en: 'Full-fat yogurt',
+                 kcal: 88, p: 3.3, c: 4.5, f: 6, fib: 0 },
+  egg_cooked:  { fa: 'تخم‌مرغ (پخته)', en: 'Egg, cooked',
+                 kcal: 143, p: 12.6, c: 0.7, f: 9.5, fib: 0 },
+  turmeric_oil:{ fa: 'روغن مایع', en: 'Vegetable oil',
+                 kcal: 884, p: 0, c: 0, f: 100, fib: 0 },
   rice_pudding:{ fa: 'برنج نیم‌کوب پخته', en: 'Broken rice, cooked',
                  kcal: 130, p: 2.4, c: 28, f: 0.3, fib: 0.4 },
 };
@@ -52,6 +95,217 @@ export const PARTS = {
  * "with rice" and "stew only" are never silently confused.
  */
 export const RECIPES = {
+  /* --- added after the first twenty: the dishes people log most --- */
+  ir_bademjan: {
+    parts: [
+      { part: 'lamb_stew',    g: 75 },
+      { part: 'fried_egpl',   g: 110 },
+      { part: 'tomato_paste', g: 22 },
+      { food: 'v_onion',      g: 35 },
+      { part: 'turmeric_oil', g: 8 },
+    ],
+  },
+  ir_karafs: {
+    parts: [
+      { part: 'lamb_stew',  g: 75 },
+      { part: 'celery_fr',  g: 120 },
+      { food: 'v_herbs',    g: 35 },
+      { part: 'turmeric_oil', g: 6 },
+      { food: 'v_onion',    g: 30 },
+    ],
+  },
+  ir_loobia_sabz: {
+    parts: [
+      { part: 'mince_beef',   g: 70 },
+      { part: 'green_bean_c', g: 130 },
+      { part: 'tomato_paste', g: 20 },
+      { food: 'v_onion',      g: 30 },
+      { part: 'turmeric_oil', g: 10 },
+    ],
+  },
+  ir_bamieh_kh: {
+    parts: [
+      { part: 'lamb_stew',    g: 70 },
+      { part: 'okra_cooked',  g: 130 },
+      { part: 'tomato_paste', g: 22 },
+      { food: 'v_onion',      g: 28 },
+      { part: 'turmeric_oil', g: 8 },
+    ],
+  },
+  ir_beh: {
+    parts: [
+      { part: 'lamb_stew',  g: 70 },
+      { part: 'quince',     g: 120 },
+      { part: 'split_peas', g: 35 },
+      { part: 'sugar',      g: 10 },
+      { part: 'turmeric_oil', g: 8 },
+      { food: 'v_onion',    g: 28 },
+    ],
+  },
+  ir_aloo_esfenaj: {
+    parts: [
+      { part: 'lamb_stew',   g: 70 },
+      { food: 'v_spinach',   g: 110 },
+      { part: 'plum_dried',  g: 35 },
+      { part: 'turmeric_oil', g: 8 },
+      { food: 'v_onion',     g: 28 },
+    ],
+  },
+  ir_gharch: {
+    parts: [
+      { part: 'chicken_stew', g: 90 },
+      { food: 'v_mushroom',   g: 110 },
+      { food: 'd_cream',      g: 20 },
+      { part: 'turmeric_oil', g: 7 },
+      { food: 'v_onion',      g: 25 },
+    ],
+  },
+  ir_ghalieh_mahi: {
+    parts: [
+      { part: 'fish_white',   g: 120 },
+      { part: 'coriander_fr', g: 70 },
+      { part: 'tamarind',     g: 18 },
+      { part: 'turmeric_oil', g: 12 },
+      { food: 'v_onion',      g: 25 },
+    ],
+  },
+  ir_ghalieh_meygu: {
+    parts: [
+      { part: 'prawn',        g: 110 },
+      { part: 'coriander_fr', g: 70 },
+      { part: 'tamarind',     g: 18 },
+      { part: 'turmeric_oil', g: 12 },
+      { food: 'v_onion',      g: 25 },
+    ],
+  },
+  ir_estamboli: {
+    parts: [
+      { food: 'g_rice_white', g: 230 },
+      { part: 'mince_beef',   g: 60 },
+      { part: 'tomato_paste', g: 25 },
+      { part: 'fried_potato', g: 50 },
+      { part: 'turmeric_oil', g: 12 },
+      { food: 'v_onion',      g: 25 },
+    ],
+  },
+  ir_loobia_polo: {
+    parts: [
+      { food: 'g_rice_white', g: 230 },
+      { part: 'mince_beef',   g: 65 },
+      { part: 'green_bean_c', g: 70 },
+      { part: 'tomato_paste', g: 20 },
+      { part: 'turmeric_oil', g: 12 },
+    ],
+  },
+  ir_kalam_polo: {
+    parts: [
+      { food: 'g_rice_white', g: 230 },
+      { part: 'cabbage_c',    g: 90 },
+      { part: 'mince_beef',   g: 55 },
+      { food: 'v_herbs',      g: 25 },
+      { part: 'turmeric_oil', g: 12 },
+    ],
+  },
+  ir_adas_polo: {
+    parts: [
+      { food: 'g_rice_white', g: 230 },
+      { part: 'lentil_ckd',   g: 90 },
+      { food: 'fr_raisin',    g: 20 },
+      { part: 'fried_onion',  g: 15 },
+      { part: 'turmeric_oil', g: 10 },
+    ],
+  },
+  ir_reshteh_polo: {
+    parts: [
+      { food: 'g_rice_white', g: 210 },
+      { part: 'vermicelli',   g: 35 },
+      { food: 'fr_date',      g: 20 },
+      { food: 'fr_raisin',    g: 15 },
+      { part: 'turmeric_oil', g: 12 },
+    ],
+  },
+  ir_shevid_polo: {
+    parts: [
+      { food: 'g_rice_white', g: 240 },
+      { part: 'broad_beans',  g: 70 },
+      { part: 'dill',         g: 25 },
+      { food: 'd_butter',     g: 10 },
+    ],
+  },
+  ir_sabzi_mahi: {
+    parts: [
+      { food: 'g_rice_white', g: 220 },
+      { food: 'v_herbs',      g: 45 },
+      { part: 'fish_white',   g: 120 },
+      { part: 'turmeric_oil', g: 12 },
+    ],
+  },
+  ir_makaroni: {
+    parts: [
+      { food: 'g_pasta',      g: 260 },
+      { part: 'mince_beef',   g: 60 },
+      { part: 'tomato_paste', g: 28 },
+      { part: 'turmeric_oil', g: 10 },
+      { food: 'v_onion',      g: 25 },
+    ],
+  },
+  ir_koofteh_tab: {
+    parts: [
+      { part: 'mince_beef',   g: 110 },
+      { food: 'g_rice_white', g: 60 },
+      { part: 'split_peas',   g: 45 },
+      { food: 'v_herbs',      g: 30 },
+      { part: 'tomato_paste', g: 20 },
+      { part: 'turmeric_oil', g: 10 },
+    ],
+  },
+  ir_kookoo_sib: {
+    parts: [
+      { part: 'fried_potato', g: 110 },
+      { part: 'egg_cooked',   g: 60 },
+      { part: 'flour',        g: 10 },
+      { part: 'turmeric_oil', g: 14 },
+    ],
+  },
+  ir_kookoo_bad: {
+    parts: [
+      { part: 'fried_egpl',   g: 110 },
+      { part: 'egg_cooked',   g: 55 },
+      { part: 'turmeric_oil', g: 12 },
+      { food: 'v_onion',      g: 20 },
+    ],
+  },
+  ir_borani: {
+    parts: [
+      { part: 'yogurt_full',  g: 110 },
+      { part: 'fried_egpl',   g: 70 },
+      { food: 'v_garlic',     g: 4 },
+    ],
+  },
+  ir_mast_musir: {
+    parts: [
+      { part: 'yogurt_full', g: 95 },
+      { food: 'v_onion',     g: 12 },
+    ],
+  },
+  ir_kaleh_joosh: {
+    parts: [
+      { part: 'kashk_liq',    g: 60 },
+      { part: 'whey_dough',   g: 160 },
+      { part: 'fried_onion',  g: 20 },
+      { food: 'v_mint',       g: 3 },
+      { part: 'bread_crumb',  g: 25 },
+    ],
+  },
+  ir_baghala_ghatogh: {
+    parts: [
+      { part: 'broad_beans',  g: 140 },
+      { part: 'egg_cooked',   g: 55 },
+      { part: 'dill',         g: 30 },
+      { part: 'turmeric_oil', g: 12 },
+      { food: 'v_garlic',     g: 6 },
+    ],
+  },
   ir_chelo_kabab: {
     withRice: true,
     parts: [

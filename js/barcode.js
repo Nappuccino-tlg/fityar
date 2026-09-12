@@ -7,7 +7,7 @@ import { S, MEAL_KEYS } from './store.js';
 import { t, num, pick, getLang } from './i18n.js';
 import {
   $, el, sheet, closeSheet, confirmSheet, toast, field, input, select,
-  round, parseNum, buzz,
+  round, parseNum, buzz, loading,
 } from './ui.js';
 import { addLog, scaleFood, refreshAll } from './nutrition.js';
 import { emptyArt } from './art.js';
@@ -113,11 +113,87 @@ function manualEntry(meal) {
   );
 }
 
+/* ---------------- Open Food Facts ----------------
+   An open database of packaged products, keyed by barcode. Only the digits that
+   were scanned are sent, and only when the user asked to scan. */
+
+const OFF_URL = (code) =>
+  `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`
+  + '?fields=product_name,product_name_fa,brands,quantity,serving_quantity,nutriments';
+
+const n = (v) => {
+  const x = Number(v);
+  return Number.isFinite(x) && x >= 0 ? Math.round(x * 10) / 10 : 0;
+};
+
+/** Map an Open Food Facts product onto the shape the rest of the app uses. */
+function fromOFF(p) {
+  const nut = p?.nutriments || {};
+  /* energy-kcal_100g is the field we want; some products only carry kJ */
+  let kcal = Number(nut['energy-kcal_100g']);
+  if (!Number.isFinite(kcal) || kcal <= 0) {
+    const kj = Number(nut['energy-kj_100g'] ?? nut.energy_100g);
+    if (Number.isFinite(kj) && kj > 0) kcal = kj / 4.184;
+  }
+  const protein = n(nut.proteins_100g);
+  const carbs = n(nut.carbohydrates_100g);
+  const fat = n(nut.fat_100g);
+  const fiber = n(nut.fiber_100g);
+
+  /* a row with no energy and no macros tells the user nothing — treat it as a
+     miss rather than filling the form with zeros */
+  if (!(kcal > 0) && !(protein || carbs || fat)) return null;
+
+  const brand = String(p.brands || '').split(',')[0].trim();
+  const base = String(p.product_name_fa || p.product_name || '').trim();
+  /* many records already carry the brand inside the product name, which gave
+     labels like "Nutella — Nutella" */
+  const hasBrand = brand && base.toLowerCase().includes(brand.toLowerCase());
+  const label = (hasBrand || !brand) ? base : [base, brand].join(' — ');
+  if (!label) return null;
+
+  return {
+    name: label,
+    nameFa: String(p.product_name_fa || '').trim() || label,
+    kcal: Math.round(kcal || (protein * 4 + carbs * 4 + fat * 9)),
+    p: protein, c: carbs, f: fat, fib: fiber,
+    serving: n(p.serving_quantity) || 100,
+    source: 'off',
+  };
+}
+
+async function lookupOFF(code) {
+  if (!navigator.onLine) return null;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 7000);   // a slow lookup must not hang the sheet
+    const r = await fetch(OFF_URL(code), { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (j.status !== 1 && !j.product) return null;
+    return fromOFF(j.product);
+  } catch {
+    return null;      /* offline, blocked, or unknown — the manual form still works */
+  }
+}
+
 /* ---------------- what happens after a code is read ---------------- */
 
 export async function handleCode(code, meal = 'snack') {
   const rec = await findBarcode(code);
   if (rec?.food) return openKnown(rec, meal);
+
+  /* not taught yet: ask Open Food Facts before asking the person */
+  const busy = loading(t('searching'));
+  const found = await lookupOFF(code);
+  busy?.();
+
+  if (found) {
+    /* remember it, so the next scan of this product works with no connection */
+    await bindBarcode(code, found);
+    return openKnown({ code, food: found, source: 'off' }, meal);
+  }
   openTeach(code, meal);
 }
 
@@ -141,6 +217,10 @@ function openKnown(rec, meal) {
 
   sheet(pick(f), el('div', {},
     el('div', { class: 'bc-chip' }, '🏷️ ' + rec.code),
+    rec.source === 'off' || f.source === 'off'
+      ? el('div', { class: 'muted', style: 'margin:-4px 0 10px;font-size:11.5px' },
+          t('fromOFF'))
+      : null,
     field(t('amount') + ' (' + t('gram') + ')', amt),
     out,
     field(t('addTo'), mealSel),
