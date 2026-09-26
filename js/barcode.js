@@ -1,15 +1,21 @@
 /* ============ Barcode scanning — you teach it once, it remembers ============
-   Uses the browser's on-device BarcodeDetector. No lookup service is involved,
-   so it works offline and knows exactly the products you actually buy.
+   Reading the code is done on the device by the browser's BarcodeDetector.
+
+   Three places are asked for the product, in this order, and the first two need
+   no connection: what you have taught this device before, the branded products
+   that ship with the app, and only then Open Food Facts. Whatever comes back is
+   remembered, so a second scan of anything is offline too.
 =========================================================================== */
 import * as db from './db.js';
-import { S, MEAL_KEYS } from './store.js';
+import { S, MEAL_KEYS, saveSettings } from './store.js';
 import { t, num, pick, getLang } from './i18n.js';
 import {
   $, el, sheet, closeSheet, confirmSheet, toast, field, input, select,
   round, parseNum, buzz, loading,
 } from './ui.js';
 import { addLog, scaleFood, refreshAll } from './nutrition.js';
+import { foodByBarcode } from './data-foods.js';
+import { PROXY_URL } from './config.js';
 import { emptyArt } from './art.js';
 
 const FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf'];
@@ -178,21 +184,84 @@ async function lookupOFF(code) {
   }
 }
 
+/* ---------------- the shared pool ----------------
+   Readings of nutrition labels that other people have typed in. What is sent is
+   a barcode and the numbers printed on a packet — nothing about the person, and
+   no token, so the server cannot tell who sent what.
+================================================================= */
+
+const shareUrl = () => {
+  const base = String(S.settings.baseUrl || PROXY_URL || '').replace(/\/+$/, '');
+  return base || null;
+};
+
+/** Is contributing switched on? Defaults to on; a person can turn it off. */
+export const sharingOn = () => S.settings.shareBarcodes !== false;
+
+async function askPool(code) {
+  const base = shareUrl();
+  if (!base || !navigator.onLine) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 7000);
+  try {
+    const r = await fetch(`${base}/barcode/get`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }), signal: ctrl.signal,
+    });
+    const d = await r.json();
+    return d?.found ? { ...d.product, confirmedBy: d.confirmedBy } : null;
+  } catch { return null; }
+  finally { clearTimeout(timer); }
+}
+
+/** Offer a reading back. Failure is silent: it must never block logging food. */
+async function offerToPool(code, food) {
+  if (!sharingOn()) return;
+  const base = shareUrl();
+  if (!base || !navigator.onLine) return;
+  try {
+    await fetch(`${base}/barcode/put`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code, name: food.nameFa || food.name, brand: food.brand || '',
+        kcal: food.kcal, p: food.p, c: food.c, f: food.f, fib: food.fib,
+        serving: food.serving, liquid: !!food.liquid,
+      }),
+    });
+  } catch { /* the diary entry is what matters; this is a gift, not a duty */ }
+}
+
 /* ---------------- what happens after a code is read ---------------- */
 
 export async function handleCode(code, meal = 'snack') {
   const rec = await findBarcode(code);
   if (rec?.food) return openKnown(rec, meal);
 
-  /* not taught yet: ask Open Food Facts before asking the person */
+  /* Products that ship with the app resolve instantly and with no connection,
+     which is the point of carrying their barcodes at all. */
+  const builtin = foodByBarcode(code);
+  if (builtin) {
+    return openKnown({ code, food: {
+      name: builtin.nameFa, brand: builtin.brand,
+      kcal: builtin.kcal, p: builtin.p, c: builtin.c, f: builtin.f, fib: builtin.fib,
+      serving: builtin.servings?.[0]?.[1] || 100, liquid: builtin.liquid,
+    }, source: 'builtin' }, meal);
+  }
+
+  /* Not on this device yet. Ask the people who have already read this label,
+     then Open Food Facts, then the person holding the packet. */
   const busy = loading(t('searching'));
-  const found = await lookupOFF(code);
-  busy?.();
+  let found = null;
+  try {
+    found = await askPool(code);
+    if (!found) found = await lookupOFF(code);
+  } finally { busy(); }   /* a lookup that throws must not strand the spinner */
 
   if (found) {
     /* remember it, so the next scan of this product works with no connection */
     await bindBarcode(code, found);
-    return openKnown({ code, food: found, source: 'off' }, meal);
+    return openKnown({ code, food: found,
+                       source: found.confirmedBy ? 'pool' : 'off' }, meal);
   }
   openTeach(code, meal);
 }
@@ -209,7 +278,7 @@ function openKnown(rec, meal) {
     const g = parseNum(amt.value);
     const m = scaleFood(f, g);
     out.replaceChildren(
-      el('div', { style: 'font-size:19px;font-weight:700;color:var(--tx);margin-bottom:6px' },
+      el('div', { style: 'font-size:var(--t-2xl);font-weight:700;color:var(--tx);margin-bottom:6px' },
         `${num(Math.round(m.kcal))} ${t('kcal')}`),
       el('div', {}, `${t('protein')} ${num(round(m.protein, 1), 1)}g · ${t('carbs')} ${num(round(m.carbs, 1), 1)}g · ${t('fat')} ${num(round(m.fat, 1), 1)}g`));
   };
@@ -218,7 +287,7 @@ function openKnown(rec, meal) {
   sheet(pick(f), el('div', {},
     el('div', { class: 'bc-chip' }, '🏷️ ' + rec.code),
     rec.source === 'off' || f.source === 'off'
-      ? el('div', { class: 'muted', style: 'margin:-4px 0 10px;font-size:11.5px' },
+      ? el('div', { class: 'muted', style: 'margin:-4px 0 10px;font-size:var(--t-sm)' },
           t('fromOFF'))
       : null,
     field(t('amount') + ' (' + t('gram') + ')', amt),
@@ -277,9 +346,17 @@ function openTeach(code, meal, existing = null) {
       };
       await bindBarcode(code, food);
       await db.put('foods', food);          // also lands in "my foods" for search
+      offerToPool(code, food);              // not awaited: a gift, not a step
       closeSheet(); toast(t('barcodeSaved'), 'ok'); buzz();
       openKnown({ code, food }, meal);
     } }, t('save')),
+    /* Said where the decision is made, not buried in settings. */
+    el('label', { class: 'share-note' },
+      el('input', { type: 'checkbox', checked: sharingOn(), onchange: async (e) => {
+        S.settings.shareBarcodes = e.target.checked;
+        await saveSettings();
+      } }),
+      el('span', {}, t('shareBarcodeNote'))),
   ));
 }
 

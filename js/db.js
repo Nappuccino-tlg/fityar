@@ -26,21 +26,53 @@ export const STORES = {
 
 let _db = null;
 
+function createMissing(db) {
+  for (const [name, cfg] of Object.entries(STORES)) {
+    if (db.objectStoreNames.contains(name)) continue;
+    const s = db.createObjectStore(name, { keyPath: cfg.keyPath });
+    if (cfg.idx) for (const [n, kp] of Object.entries(cfg.idx)) s.createIndex(n, kp);
+  }
+}
+
+function openAt(version) {
+  return new Promise((res, rej) => {
+    const req = version ? indexedDB.open(DB_NAME, version) : indexedDB.open(DB_NAME);
+    req.onupgradeneeded = (e) => createMissing(e.target.result);
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+    /* Another tab holding the old version open blocks the upgrade. Saying so
+       beats hanging on a promise that never settles. */
+    req.onblocked = () => rej(new Error('db-blocked'));
+  });
+}
+
 export function open() {
   if (_db) return Promise.resolve(_db);
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, DB_VER);
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      for (const [name, cfg] of Object.entries(STORES)) {
-        if (db.objectStoreNames.contains(name)) continue;
-        const s = db.createObjectStore(name, { keyPath: cfg.keyPath });
-        if (cfg.idx) for (const [n, kp] of Object.entries(cfg.idx)) s.createIndex(n, kp);
-      }
-    };
-    req.onsuccess = () => { _db = req.result; res(_db); };
-    req.onerror = () => rej(req.error);
-  });
+  return (async () => {
+    /* Open at whatever version is already on the device — never at DB_VER.
+       Asking for a LOWER version than the one stored is a VersionError, and a
+       database that has ever been repaired sits one above DB_VER, so naming the
+       constant here would break the app on the launch after every repair. */
+    let db = await openAt(null);
+
+    /* Adding a store to STORES without raising DB_VER leaves existing installs
+       without it — correct for whoever wrote the code, broken for everyone who
+       updated. Rather than trust that the number was remembered, look. */
+    const missing = Object.keys(STORES).filter(n => !db.objectStoreNames.contains(n));
+    if (missing.length || db.version < DB_VER) {
+      if (missing.length) console.warn('[db] restoring stores this install lacks:', missing.join(', '));
+      const next = Math.max(DB_VER, db.version + 1);
+      db.close();
+      db = await openAt(next);
+    }
+
+    /* A tab that opens later with a higher version needs this one to let go,
+       or its upgrade blocks forever and that tab looks frozen. */
+    db.onversionchange = () => { db.close(); _db = null; };
+
+    _db = db;
+    return db;
+  })();
 }
 
 function tx(store, mode = 'readonly') {

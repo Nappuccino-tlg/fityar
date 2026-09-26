@@ -1,14 +1,21 @@
 /* ============ Training: exercises, routines, live session, history ============ */
 import * as db from './db.js';
+import { icon, lineIcon } from './icons.js';
+import { motionOff } from './motion.js';
 import { S, e1rm, kgToDisp, dispToKg, wUnit, workoutKcal } from './store.js';
-import { t, num, pick, getLang, countLabel } from './i18n.js';
+import { t, num, pick, getLang, countLabel, numText } from './i18n.js';
 import {
   $, $$, el, sheet, closeSheet, confirmSheet, toast, field, input, select,
   round, sum, parseNum, clock, durLabel, todayKey, dateKey, shortDate, longDate,
-  buzz, beep,
+  buzz, beep, clamp,
 } from './ui.js';
 import { EXERCISES, EX_INDEX, MUSCLES, EQUIPMENT, TEMPLATES } from './data-exercises.js';
-import { emptyArt } from './art.js';
+import { emptyArt, bodyMap } from './art.js';
+import { moveFor, MOVES } from './moves.js';
+import { muscleStats, heatFrom, recencyOf, RECENCY_TONE } from './muscles.js';
+import { body3d } from './body3d.js';
+import { afterWorkout, pouyaCard, workoutFacts } from './pouya.js';
+import { barbell3d } from './art3d.js';
 
 const SET_TYPES = {
   n: { key: 'n', label: 'normalSet', short: '', cls: '' },
@@ -18,6 +25,50 @@ const SET_TYPES = {
 };
 
 /* ---------------- exercise catalog ---------------- */
+
+/**
+ * Every record you hold, newest first.
+ *
+ * Sorted by when it was set rather than alphabetically: what you did
+ * recently is what you want to see, and a list in exercise order buries it.
+ */
+export async function openRecords() {
+  const recs = await records();
+  const fa = getLang() === 'fa';
+  const rows = Object.values(recs)
+    .filter((r) => r.maxW || r.maxReps)
+    .sort((a, b) => String(b.weightAt || b.repsAt || '').localeCompare(
+      String(a.weightAt || a.repsAt || '')));
+
+  if (!rows.length) {
+    sheet(t('myRecords'), emptyArt('workout', t('noRecordsYet'), t('noRecordsHint')));
+    return;
+  }
+
+  const pr = (label, value, when) => el('div', { class: 'pr-cell' },
+    el('span', { class: 'pr-lab' }, label),
+    el('b', {}, value),
+    when ? el('span', { class: 'pr-when' }, shortDate(when)) : null);
+
+  sheet(t('myRecords'), el('div', { class: 'pr-list' }, ...rows.map((r) => el('div', { class: 'pr-row' },
+    el('div', { class: 'pr-head' },
+      el('b', {}, exName(r.exId)),
+      r.best1rm
+        ? el('span', {}, `${t('est1rm')} ${num(round(kgToDisp(r.best1rm), 1))}${wUnit()}`)
+        : null),
+    el('div', { class: 'pr-grid' },
+      pr(fa ? PR_KINDS[0].fa : PR_KINDS[0].en,
+         r.maxW ? `${num(round(kgToDisp(r.maxW), 1))}${wUnit()} × ${num(r.reps)}` : '—',
+         r.weightAt),
+      pr(fa ? PR_KINDS[1].fa : PR_KINDS[1].en,
+         r.maxReps ? `${num(r.maxReps)}${r.repsWeight ? ` × ${num(round(kgToDisp(r.repsWeight), 1))}${wUnit()}` : ''}` : '—',
+         r.repsAt),
+      pr(fa ? PR_KINDS[2].fa : PR_KINDS[2].en,
+         r.maxVol ? `${num(round(kgToDisp(r.maxVol)))}${wUnit()}` : '—',
+         r.volumeAt)),
+  ))));
+}
+
 
 let customEx = [];
 export async function loadExercises() {
@@ -60,7 +111,20 @@ export async function lastSetsFor(exId) {
   return [];
 }
 
-/** Personal records per exercise: heaviest weight and best estimated 1RM. */
+/**
+ * Personal records per exercise, kept as the three different things they are.
+ *
+ *   weight  the heaviest single lift
+ *   reps    the most reps ever done in one set, at any weight
+ *   volume  the most work in one set, weight times reps
+ *
+ * Collapsing them loses real achievements: adding a rep at a weight below
+ * your heaviest is not visible in "heaviest weight" at all, and it is often
+ * the thing that actually happened this month.
+ *
+ * Each carries the date it fell, because a record set last week and one set
+ * a year ago say different things about where you are now.
+ */
 export async function records() {
   const hs = await history();
   const rec = {};
@@ -70,16 +134,76 @@ export async function records() {
         if (!s.done || s.type === 'w') continue;
         const wt = Number(s.w) || 0, rp = Number(s.r) || 0;
         if (!rp) continue;
-        const r = (rec[e.exId] ||= { exId: e.exId, maxW: 0, best1rm: 0, maxVol: 0, date: w.date, reps: 0 });
-        if (wt > r.maxW) { r.maxW = wt; r.reps = rp; r.date = w.date; }
+        const r = (rec[e.exId] ||= {
+          exId: e.exId, maxW: 0, best1rm: 0, maxVol: 0, maxReps: 0,
+          date: w.date, reps: 0,
+          weightAt: null, repsAt: null, volumeAt: null,
+          repsWeight: 0, volumeReps: 0, volumeWeight: 0,
+        });
+        if (wt > r.maxW) { r.maxW = wt; r.reps = rp; r.date = w.date; r.weightAt = w.date; }
+        if (rp > r.maxReps) { r.maxReps = rp; r.repsWeight = wt; r.repsAt = w.date; }
         const est = e1rm(wt, rp);
         if (est > r.best1rm) r.best1rm = est;
-        if (wt * rp > r.maxVol) r.maxVol = wt * rp;
+        if (wt * rp > r.maxVol) {
+          r.maxVol = wt * rp; r.volumeReps = rp; r.volumeWeight = wt; r.volumeAt = w.date;
+        }
       }
     }
   }
   return rec;
 }
+
+/**
+ * A record just fell. Say which one, once, and get out of the way.
+ *
+ * One banner that rises, holds and leaves. Not confetti: a PR happens with
+ * a bar in your hands and a party on screen is the wrong register for it.
+ * With motion off it is the ordinary toast, because the information still
+ * has to arrive.
+ */
+function celebratePR(exId, kinds) {
+  const fa = getLang() === 'fa';
+  const which = kinds.map((k) => {
+    const kind = PR_KINDS.find((x) => x.id === k);
+    return fa ? kind.fa : kind.en;
+  }).join(fa ? ' و ' : ' & ');
+  const line = `${exName(exId)} · ${which}`;
+
+  buzz(60);
+  if (motionOff() || !document.body.animate) {
+    toast(`${t('newPR')} — ${line}`, 'ok');
+    return;
+  }
+
+  /* The bar is the thing that just moved — the banner announces the record
+     ON the object that set it, the plates lit and the bar rising the last
+     few centimetres it earned. The glow behind it brightens with the lift. */
+  const bar = barbell3d();
+  const el2 = el('div', { class: 'pr-pop pr-lift' },
+    el('span', { class: 'pr-pop-bar' }, bar),
+    el('div', {}, el('b', {}, t('newPR')), el('span', {}, line)));
+  document.body.append(el2);
+  bar.animate?.([
+    { transform: 'translateY(7px) rotate(-2.2deg)' },
+    { transform: 'translateY(-3px) rotate(1.6deg)', offset: .38 },
+    { transform: 'translateY(1px) rotate(-0.8deg)', offset: .62 },
+    { transform: 'translateY(0) rotate(0deg)' },
+  ], { duration: 1500, easing: 'cubic-bezier(.34,1.3,.64,1)', fill: 'both' });
+  el2.animate([
+    { transform: 'translateY(26px)', opacity: 0 },
+    { transform: 'translateY(0)', opacity: 1, offset: 0.14 },
+    { transform: 'translateY(0)', opacity: 1, offset: 0.82 },
+    { transform: 'translateY(-14px)', opacity: 0 },
+  ], { duration: 2600, easing: 'cubic-bezier(.23,1,.32,1)' })
+    .finished.catch(() => {}).then(() => el2.remove());
+}
+
+/** The three kinds, named once so the screen and the toast agree. */
+export const PR_KINDS = [
+  { id: 'weight', fa: 'بیشترین وزن', en: 'Heaviest' },
+  { id: 'reps', fa: 'بیشترین تکرار', en: 'Most reps' },
+  { id: 'volume', fa: 'بیشترین کار در یک ست', en: 'Best set' },
+];
 
 export function workoutVolume(w) {
   return sum(w.exercises || [], e => sum((e.sets || []).filter(s => s.done && s.type !== 'w'), s => (Number(s.w) || 0) * (Number(s.r) || 0)));
@@ -114,10 +238,31 @@ export async function restoreSession() {
     if (session.minimized) showMini(true);
     else openSessionView();
   }
+  gymModeOff();   // a refresh mid-gym-mode lands on the normal session view
 }
 
 export async function startWorkout(routine = null) {
-  if (session.active) { openSessionView(); return; }
+  gymModeOff();   // a leftover gym overlay from a finished session must never survive
+  sessionPR = null;
+  if (session.active) {
+    const wanted = routine?.routineId || routine?.id || null;
+    /* Asking for the workout that is already open, or for no routine at all,
+       means "take me back to it". */
+    if (!routine || wanted === session.routineId) { openSessionView(); return; }
+
+    const logged = workoutSets(session);
+    if (logged) {
+      /* Sets already recorded are never discarded to make room for a different
+         routine. Show the running workout and say why. */
+      openSessionView();
+      toast(t('finishCurrentFirst'), 'err');
+      return;
+    }
+    /* Nothing logged, so nothing to lose — swap it for the routine that was
+       actually asked for, and say so rather than appearing to ignore the tap. */
+    await cancelWorkout(true);
+    toast(t('switchedWorkout'), 'ok');
+  }
   prCache = await records();
 
   const exercises = [];
@@ -174,6 +319,23 @@ export function openSessionView() {
   document.body.style.overflow = 'hidden';
   renderSession();
   persist();
+  syncGymButton();
+  /* The workout opens on the stage, not the list: one exercise, its sets,
+     the clock. The ✕ on the stage is what reveals the full list. */
+  if (session.active && !focusEl && !gymEl) focusEnter(firstOpenIndex());
+}
+
+/** The gym-mode switch lives in the session footer; it only exists mid-workout. */
+function syncGymButton() {
+  const host = document.querySelector('.s-actions');
+  if (!host) return;
+  let b = $('#gym-btn');
+  if (!b) {
+    b = el('button', { class: 'btn ghost', id: 'gym-btn', onclick: () => gymModeOn() });
+    host.prepend(b);
+  }
+  b.hidden = !session.active;
+  b.replaceChildren('🏋️ ' + t('gymMode'));
 }
 export function minimizeSession() {
   session.minimized = true;
@@ -186,6 +348,100 @@ function showMini(on) {
   const m = $('#mini-session');
   m.hidden = !on || !session.active;
   if (on && session.active) $('#mini-name').textContent = session.name;
+}
+
+/* ============================================================
+   GYM MODE 🏋️ — one huge set at a time
+   The phone lives on the floor between sets: the session fills
+   the screen with today's current exercise, its inputs and its
+   done-button are finger-sized, and a Wake Lock keeps the
+   display awake while the person works. Everything else —
+   scrolling, headers, footers — stays exactly as it was.
+   ============================================================ */
+let gymUI = null, gymEl = null, gymWake = null;
+
+export function gymModeOn() {
+  if (!session.active || gymEl) return;
+  gymEl = el('div', { class: 'gym-mode' });
+  document.body.append(gymEl);
+  document.body.style.overflow = 'hidden';
+  $('#session').style.visibility = 'hidden';
+  drawGym();
+  requestWake().catch(() => {});
+  toast(t('gymModeOn'), 'ok'); buzz(30);
+}
+function gymModeOff() {
+  if (!gymEl) return;
+  gymEl.remove(); gymEl = null;
+  gymUI = null;
+  document.body.style.overflow = '';
+  $('#session').style.visibility = '';
+  releaseWake().catch(() => {});
+}
+export function gymModeRunning() { return !!gymEl; }
+
+async function requestWake() {
+  try { gymWake = await navigator.wakeLock?.request('screen'); } catch { /* denied or absent */ }
+}
+async function releaseWake() {
+  try { gymWake?.release(); } catch { /* fine */ } gymWake = null;
+}
+document.addEventListener('visibilitychange', () => {
+  /* the lock dies with the tab: re-request it when the person comes back */
+  if (document.visibilityState === 'visible' && gymEl) requestWake().catch(() => {});
+});
+
+/** The one exercise whose turn it is: first with work left, else the last. */
+function currentGymEx() {
+  return session.exercises.find(e => e.sets.some(s => !s.done)) || session.exercises.at(-1);
+}
+
+function drawGym() {
+  if (!gymEl || !session.active) return gymModeOff();
+  const ex = currentGymEx();
+  gymEl.replaceChildren();
+  if (!ex) { gymModeOff(); return; }
+  const done = workoutSets(session);
+  const total = session.exercises.reduce((n, e) => n + e.sets.length, 0);
+  const meta = exById(ex.exId);
+  const type = meta?.type || 'wr';
+
+  const rows = el('div', { class: 'gym-rows' });
+  ex.sets.forEach((st, si) => {
+    const ti = SET_TYPES[st.type] || SET_TYPES.n;
+    const wIn = el('input', { class: 'gym-in', type: 'number', inputmode: 'decimal', step: '0.5',
+      value: st.w === '' ? '' : (st.w === null ? '' : st.w), placeholder: '0' });
+    const rIn = el('input', { class: 'gym-in gym-r', type: 'number', inputmode: 'numeric',
+      value: st.r ?? '', placeholder: '0' });
+    if (type === 'r') wIn.hidden = true;
+    wIn.oninput = () => { st.w = parseNum(wIn.value); persist(); };
+    rIn.oninput = () => { st.r = parseNum(rIn.value); persist(); };
+    const ok = el('button', { class: 'gym-ok' + (st.done ? ' done' : '') },
+      el('b', {}, String(si + 1)), el('span', {}, st.done ? '✓' : '→'));
+    ok.onclick = () => toggleSet(ex, session.exercises.indexOf(ex), st, si);
+    rows.append(el('div', { class: 'gym-row' + (st.done ? ' done' : '') },
+      el('span', { class: 'gym-tt' }, ti.short || ''),
+      wIn, el('span', { class: 'gym-x' }, '×'), rIn, ok));
+  });
+
+  const actions = el('div', { class: 'gym-actions' });
+  actions.replaceChildren(
+    el('button', { class: 'btn ghost', onclick: () => {
+      ex.sets.push({ w: ex.sets.at(-1)?.w ?? '', r: ex.sets.at(-1)?.r ?? '', type: 'n', done: false }); persist(); drawGym();
+    } }, '+ ' + t('addSet')),
+    el('button', { class: 'btn ghost', onclick: () => gymModeOff() }, t('gymModeExit')),
+  );
+
+  gymEl.append(
+    el('div', { class: 'gym-top' },
+      el('div', {}, el('span', { class: 'muted' }, session.name), el('b', { class: 'gym-ex' }, exName(ex.exId))),
+      el('div', { class: 'gym-count' }, el('b', {}, `${num(done)}/${num(total)}`), el('span', {}, t('doneSets'))),
+      el('button', { class: 'tb-btn', onclick: () => { import('./voice.js').then(v => v.onNextSet(Number(ex.sets.find(s => !s.done)?.w) || 0, Number(ex.sets.find(s => !s.done)?.r) || 0)).catch(() => {}); } }, '🔊'),
+    ),
+    el('div', { class: 'gym-progress' }, el('i', { style: `width:${total ? (done / total) * 100 : 0}%` })),
+    rows,
+    actions,
+  );
 }
 
 /* ---------- session rendering ---------- */
@@ -207,9 +463,14 @@ export function renderSession() {
   const host = $('#s-body');
   host.replaceChildren();
   if (!session.exercises.length) {
-    host.append(el('div', { class: 'empty' }, getLang() === 'fa' ? 'یک حرکت اضافه کنید تا شروع شود' : 'Add an exercise to begin'));
+    /* No button: the session footer already carries "add exercise", and two
+       identical buttons a centimetre apart is worse than one. */
+    host.append(emptyArt('dumbbell', t('sessionEmpty'), t('sessionEmptyHint'), 'var(--blue)'));
   }
   session.exercises.forEach((ex, xi) => host.append(exerciseCard(ex, xi)));
+  syncGymButton();
+  /* focus mode is the live surface — keep it in step with the list */
+  if (focusEl) drawFocus();
 }
 
 function exerciseCard(ex, xi) {
@@ -217,9 +478,29 @@ function exerciseCard(ex, xi) {
   const type = meta?.type || 'wr';
   const card = el('div', { class: 'sx' });
 
+  /* The muscle this movement is for, lit on a body you can turn — and
+     brightening as the sets are done. The figure knew how to do this
+     already; it was only ever shown on the browsing tab, which is not
+     where anyone needs it. */
+  const worked = meta?.muscle && meta.muscle !== 'cardio' && meta.muscle !== 'fullbody'
+    ? meta.muscle : null;
+  const doneSets = (ex.sets || []).filter((st) => st.done && st.type !== 'w').length;
+  const planned = Math.max(1, (ex.sets || []).filter((st) => st.type !== 'w').length);
+  /* Held in the middle of its movement rather than standing to attention: at
+     this size the shape is what carries — a squat and a press are two
+     different silhouettes long before the name has been read. Still, not
+     animated: a screen of cards each running its own loop is a hot phone. */
+  const figure = worked
+    ? body3d({
+      heat: { [worked]: Math.max(0.25, Math.min(1, doneSets / planned)) },
+      scale: 0.21, move: moveFor(meta), still: true,
+    })
+    : null;
+
   card.append(el('div', { class: 'sx-head' },
+    figure ? el('span', { class: 'sx-body' }, figure.node) : null,
     el('b', {}, exName(ex.exId)),
-    ex.target ? el('span', { class: 'pr-tag' }, `${t('reps')} ${ex.target}`) : null,
+    ex.target ? el('span', { class: 'pr-tag' }, `${t('reps')} ${numText(ex.target)}`) : null,
     el('button', { class: 'tb-btn', onclick: () => exerciseMenu(xi) }, '⋯'),
   ));
 
@@ -313,17 +594,48 @@ function setRow(ex, xi, st, si, normalIdx, type) {
 }
 
 function toggleSet(ex, xi, st, si) {
+  if (!st.done) {
+    /* Ghost of the same set last time: it races beside this one and a
+       breath after you tick, the verdict is spoken. Anything the athlete
+       does not need is kept out of the way — one line, then gone. */
+    import('./coach.js').then(c => c.lastSetsFor(ex.exId)).then(prev => {
+      if (!prev?.length) return;
+      const pw = Number(prev[0]?.w) || 0, pr = Number(prev[0]?.r) || 0;
+      if (!pw && !pr) return;
+      const w = Number(st.w) || 0, rp = Number(st.r) || 0;
+      if (!w && !rp) return;
+      const better = w * rp > pw * pr;
+      const same = w === pw && rp === pr;
+      const msg = same ? t('ghostEven', { w: w, r: rp })
+        : better ? t('ghostUp', { w: w, r: rp, pw, pr })
+        : t('ghostDown', { w: w, r: rp, pw, pr });
+      const el2 = el('div', { class: 'ghost-note' + (better ? ' up' : same ? '' : ' down') }, msg);
+      const card = okBtn.closest('.sx');
+      if (card) { card.prepend(el2); setTimeout(() => el2.remove(), 3500); }
+    }).catch(() => {});
+  }
   st.done = !st.done;
   if (st.done) {
     buzz(25);
     // PR check
+    /* Three records, checked apart. The old test compared estimated 1RM
+       only, so adding reps at a weight below your heaviest went unremarked
+       even when it was the best set you had ever done. */
     const r = prCache[ex.exId];
     const w = Number(st.w) || 0, rp = Number(st.r) || 0;
-    if (r && w && rp && st.type !== 'w') {
-      if (e1rm(w, rp) > r.best1rm * 1.0001) {
-        toast(`🏆 ${t('newPR')} ${exName(ex.exId)}`, 'ok');
-        r.best1rm = e1rm(w, rp);
-        if (w > r.maxW) r.maxW = w;
+    if (r && rp && st.type !== 'w') {
+      const broke = [];
+      if (w && w > r.maxW) { broke.push('weight'); r.maxW = w; }
+      if (rp > r.maxReps) { broke.push('reps'); r.maxReps = rp; }
+      if (w && w * rp > r.maxVol) { broke.push('volume'); r.maxVol = w * rp; }
+      if (w) r.best1rm = Math.max(r.best1rm, e1rm(w, rp));
+      if (broke.length) {
+        /* Kept for the end of the session. Weight only: "most reps at a
+           light weight" is a record too, but it is not the one anybody
+           wants read back to them as the headline. */
+        if (broke.includes('weight')) sessionPR = { name: exName(ex.exId), weight: w };
+        celebratePR(ex.exId, broke);
+        import('./voice.js').then(v => v.onPR(exName(ex.exId))).catch(() => {});
       }
     }
     const rest = ex.restSec ?? S.settings.restDefault;
@@ -331,6 +643,7 @@ function toggleSet(ex, xi, st, si) {
   }
   persist();
   renderSession();
+  if (gymEl) drawGym();
 }
 
 function pickSetType(xi, si) {
@@ -366,7 +679,8 @@ function exerciseMenu(xi) {
       closeSheet();
       const tools = await import('./tools.js');
       tools.openPlateCalc(last ? Number(last.w) : null);
-    } }, '🏋️ ' + t('plateCalc')),
+    } }, el('span', { class: 'streak-line' },
+      icon('dumbbell', { size: 16 }), el('em', {}, t('plateCalc')))),
     el('hr', { class: 'sep' }),
     el('div', { class: 'btn-row' },
       el('button', { class: 'btn ghost', disabled: xi === 0 || null, onclick: () => {
@@ -488,14 +802,37 @@ export async function finishWorkout() {
   session.active = false;
   clearInterval(tickTimer);
   stopRest();
+  gymModeOff();
+  focusLeave();
   await persist();
   $('#session').hidden = true;
   document.body.style.overflow = '';
   showMini(false);
   buzz(60); beep(880, 120); setTimeout(() => beep(1180, 160), 140);
-  toast(`✅ ${t('workoutSaved')} · ${durLabel((end - rec.start) / 1000)}`, 'ok');
+  toast(`${t('workoutSaved')} · ${durLabel((end - rec.start) / 1000)}`, 'ok');
   window.dispatchEvent(new CustomEvent('data-changed'));
-  showWorkoutDetail(rec);
+
+  /* What just happened, in facts — every one of them out of the database
+     that was written a moment ago, which is the only kind پویا is allowed
+     to speak from. Anything that cannot be worked out is simply left out. */
+  let facts = null;
+  try {
+    const all = await history();
+    /* The shape of the facts is pouya.js's business and is checked there;
+       the weights are this file's, because kilograms or pounds is a
+       setting. */
+    facts = workoutFacts(rec, all, {
+      volume: Math.round(kgToDisp(rec.volume || 0)),
+      unit: wUnit(),
+      prName: sessionPR?.name || '',
+      prWeight: sessionPR ? round(kgToDisp(sessionPR.weight), 1) : 0,
+    });
+    const same = all.find((x) => x.id === facts.sameId);
+    facts.lastVolume = same ? Math.round(kgToDisp(same.volume || 0)) : 0;
+  } catch { facts = null; }
+  sessionPR = null;
+
+  showWorkoutDetail(rec, facts);
 }
 
 export async function cancelWorkout(skipConfirm = false) {
@@ -507,6 +844,8 @@ export async function cancelWorkout(skipConfirm = false) {
   session.exercises = [];
   clearInterval(tickTimer);
   stopRest();
+  gymModeOff();
+  focusLeave();
   await persist();
   $('#session').hidden = true;
   document.body.style.overflow = '';
@@ -516,23 +855,42 @@ export async function cancelWorkout(skipConfirm = false) {
 /* ============================================================
    REST TIMER
    ============================================================ */
+/* The session's heaviest new record, for پویا to mention at the end. */
+let sessionPR = null;
+
 let restEnd = 0, restTotal = 0, restTimer = null;
+let countdownShownAt = 0;   // the last whole second the big 3-2-1 card repainted
 
 export function startRest(sec) {
   restTotal = sec;
   restEnd = Date.now() + sec * 1000;
+  countdownShownAt = 0;   // a new rest counts from its own numbers
   $('#rest-bar').hidden = false;
   clearInterval(restTimer);
   restTimer = setInterval(restTick, 250);
+  import('./voice.js').then(v => v.onRestStart(restTotal, () => bumpRest(30))).catch(() => {});
   restTick();
 }
 function restTick() {
   const left = Math.max(0, (restEnd - Date.now()) / 1000);
   $('#rest-time').textContent = clock(left);
-  $('#rest-fill').style.width = (left / Math.max(1, restTotal) * 100) + '%';
+  $('#rest-fill').style.transform =
+    `scaleX(${left / Math.max(1, restTotal)})`;
+  import('./voice.js').then(v => v.onRestTick(left)).catch(() => {});
+  /* the final four seconds count down on the screen itself, full size */
+  if (focusEl && left > 0 && left <= 4) {
+    const sec = Math.ceil(left);
+    if (sec !== countdownShownAt) {
+      countdownShownAt = sec;
+      focusCountdown(sec);
+    }
+  }
   if (left <= 0) {
     stopRest();
+    import('./voice.js').then(v => v.onRestEnd()).catch(() => {});
     buzz([90, 60, 90]); beep(760, 180); setTimeout(() => beep(1020, 220), 200);
+    /* rest over → the choice card, not a silent return to the list */
+    if (focusEl) focusRestOver();
   }
 }
 export function stopRest() {
@@ -543,6 +901,166 @@ export function bumpRest(sec) {
   restEnd += sec * 1000;
   restTotal = Math.max(restTotal, (restEnd - Date.now()) / 1000);
   restTick();
+}
+
+/* ============================================================
+   FOCUS MODE 🎯 — one exercise at a time
+   The whole session view becomes a single-exercise stage: the
+   move figure centre-screen, that exercise's sets, the session
+   clock up top and nothing else. After a set's rest runs out
+   the screen asks: next exercise, or stay? A corner button
+   keeps "next" reachable while staying. Per-exercise timers are
+   gone on purpose — the clock and the person decide when to move.
+   ============================================================ */
+let focusEl = null, focusIdx = 0, focusCountdownEl = null;
+
+function focusActive() { return !!focusEl; }
+
+function focusEnter(startIdx = 0) {
+  if (!session.active || focusEl) return;
+  focusIdx = clamp(startIdx, 0, Math.max(0, session.exercises.length - 1));
+  focusEl = el('div', { class: 'focus-mode' });
+  document.body.append(focusEl);
+  document.body.style.overflow = 'hidden';
+  $('#session').style.visibility = 'hidden';
+  drawFocus();
+  toast(getLang() === 'fa' ? 'حالت تمرکز — هر حرکت، یک نما' : 'Focus mode — one exercise per view', 'ok');
+}
+function focusLeave() {
+  if (!focusEl) return;
+  focusEl.remove(); focusEl = null; focusCountdownEl = null;
+  document.body.style.overflow = '';
+  $('#session').style.visibility = '';
+  renderSession();
+}
+
+/** Which exercise should be on stage: the first one with work left. */
+function firstOpenIndex() {
+  const i = session.exercises.findIndex(e => (e.sets || []).some(s => !s.done));
+  return i === -1 ? 0 : i;
+}
+
+function drawFocus() {
+  if (!focusEl) return;
+  if (!session.active) { focusLeave(); return; }
+  focusIdx = clamp(focusIdx, 0, session.exercises.length - 1);
+  const ex = session.exercises[focusIdx];
+  if (!ex) { focusLeave(); return; }
+  const meta = exById(ex.exId);
+  const type = meta?.type || 'wr';
+  const moveId = moveFor(meta || {});
+  const doneSets = (ex.sets || []).filter(s => s.done).length;
+  const totalSets = (ex.sets || []).length;
+  const fa = getLang() === 'fa';
+
+  focusEl.replaceChildren();
+
+  /* top: session clock + exit */
+  const sec = (Date.now() - session.start) / 1000;
+  focusEl.append(el('div', { class: 'focus-top' },
+    el('button', { class: 'tb-btn', onclick: focusLeave, 'aria-label': 'close' }, '✕'),
+    el('div', { class: 'focus-clock' },
+      el('b', {}, clock(sec, sec >= 3600)),
+      el('span', {}, t('focusTime'))),
+    el('button', { class: 'tb-btn', id: 'focus-min', onclick: () => { focusLeave(); minimizeSession(); }, 'aria-label': 'minimize' }, '▾'),
+  ));
+
+  /* stage: the move figure, big, centre screen */
+  const stage = el('div', { class: 'focus-stage' });
+  if (moveId) {
+    /* The body, performing it, and turnable while it does. The side view is
+       the right drawing for a card you glance at; here someone is mid-set
+       and wants to see the movement from their own angle, which is the one
+       thing a drawing cannot give them. */
+    const fig = body3d({ move: moveId, scale: 0.62, ms: 2800 });
+    if (fig?.node) stage.append(fig.node);
+    focusEl.addEventListener('focusstop', () => fig.dispose(), { once: true });
+  } else {
+    stage.append(el('div', { style: 'font-size:var(--t-5xl)' }, '🏋️'));
+  }
+  stage.append(el('div', { class: 'focus-hint' },
+    moveId && MOVES[moveId] ? (fa ? MOVES[moveId].hint.fa : MOVES[moveId].hint.en) : ''));
+  focusEl.append(stage);
+
+  /* the exercise, its sets, nothing else */
+  focusEl.append(el('div', { class: 'focus-head' },
+    el('b', {}, exName(ex.exId)),
+    ex.target ? el('span', { class: 'pr-tag' }, `${t('reps')} ${numText(ex.target)}`) : null,
+    el('span', { class: 'focus-count' },
+      `${t('focusSet')} ${num(Math.min(doneSets + 1, totalSets))} ${t('focusOf')} ${num(totalSets)}`),
+  ));
+
+  const tableHost = el('div', { class: 'focus-table' });
+  const card = exerciseCard(ex, focusIdx);
+  tableHost.append(card);
+  focusEl.append(tableHost);
+
+  /* bottom rail: previous / next exercise, add set lives in the card */
+  focusEl.append(el('div', { class: 'focus-nav' },
+    el('button', { class: 'btn ghost', disabled: focusIdx === 0 || null, onclick: () => { focusIdx--; countdownShownAt = 0; drawFocus(); } }, '→ ' + (fa ? 'قبلی' : 'Prev')),
+    el('button', { class: 'btn', onclick: () => {
+      const st = (ex.sets || []).find(s => !s.done);
+      if (st) toggleSet(ex, focusIdx, st, ex.sets.indexOf(st));
+      else if (focusIdx < session.exercises.length - 1) { focusIdx++; countdownShownAt = 0; drawFocus(); }
+      else finishWorkout();
+    } }, doneSets >= totalSets ? t('focusDone') : `✓ ${t('focusSet')} ${num(doneSets + 1)}`),
+    el('button', { class: 'btn ghost', disabled: focusIdx === session.exercises.length - 1 || null, onclick: () => { focusIdx++; countdownShownAt = 0; drawFocus(); } }, (fa ? 'بعدی' : 'Next') + ' ←'),
+  ));
+
+  /* the corner "next exercise" — reachable while staying */
+  if (focusIdx < session.exercises.length - 1) {
+    focusEl.append(el('button', { class: 'focus-corner', onclick: () => { focusIdx++; countdownShownAt = 0; drawFocus(); } },
+      (fa ? 'بعدی' : 'Next') + ' ⬅'));
+  }
+}
+
+function focusRerender() { if (focusEl) drawFocus(); }
+
+/** The big 3-2-1 during the last seconds of a set's rest. */
+function focusCountdown(sec) {
+  if (!focusEl) return;
+  if (focusCountdownEl) focusCountdownEl.remove();
+  focusCountdownEl = el('div', { class: 'focus-countdown' }, el('b', {}, num(sec)), el('span', {}, t('focusRest')));
+  focusEl.append(focusCountdownEl);
+  requestAnimationFrame(() => focusCountdownEl?.classList.add('pop'));
+  buzz(15);
+}
+
+/** Rest over: the choice card only when the exercise is complete —
+    a mid-exercise rest just returns to the stage, where the corner
+    "next" button stays reachable for whoever wants to move on. */
+function focusRestOver() {
+  if (!focusEl) return;
+  if (focusCountdownEl) { focusCountdownEl.remove(); focusCountdownEl = null; }
+  const ex = session.exercises[focusIdx];
+  const allDone = ex && (ex.sets || []).every(s => s.done);
+  const hasNext = focusIdx < session.exercises.length - 1;
+  const fa = getLang() === 'fa';
+  if (!allDone) { drawFocus(); return; }
+  if (!hasNext) {
+    /* the last exercise just finished — offer ending the workout */
+    const card = el('div', { class: 'focus-choice' },
+      el('b', {}, fa ? 'همه‌ی حرکات تمام شد' : 'All exercises complete'),
+      el('div', { class: 'btn-row' },
+        el('button', { class: 'btn', onclick: () => { card.remove(); finishWorkout(); } },
+          '✓ ' + t('finish')),
+        el('button', { class: 'btn ghost', onclick: () => card.remove() }, t('focusStay')),
+      ));
+    focusEl.append(card);
+    requestAnimationFrame(() => card.classList.add('pop'));
+    buzz(30);
+    return;
+  }
+  const card = el('div', { class: 'focus-choice' },
+    el('b', {}, fa ? 'این حرکت تمام شد' : 'Exercise complete'),
+    el('div', { class: 'btn-row' },
+      el('button', { class: 'btn', onclick: () => { card.remove(); focusIdx++; countdownShownAt = 0; drawFocus(); } },
+        '⬅ ' + t('focusNext')),
+      el('button', { class: 'btn ghost', onclick: () => card.remove() }, t('focusStay')),
+    ));
+  focusEl.append(card);
+  requestAnimationFrame(() => card.classList.add('pop'));
+  buzz(30);
 }
 
 /* ============================================================
@@ -580,9 +1098,9 @@ export function openRoutineEditor(existing = null, draft = null) {
           el('b', {}, exName(x.exId)),
           el('span', {}, `${pick(MUSCLES.find(m => m.id === exById(x.exId)?.muscle) || {})}`)),
         el('div', { style: 'display:flex;gap:7px;align-items:center;width:100%;margin-top:8px' },
-          el('span', { class: 'muted', style: 'font-size:11.5px;width:34px' }, t('sets')),
+          el('span', { class: 'muted', style: 'font-size:var(--t-sm);width:34px' }, t('sets')),
           el('div', { style: 'width:64px' }, setsIn),
-          el('span', { class: 'muted', style: 'font-size:11.5px;width:44px' }, t('reps')),
+          el('span', { class: 'muted', style: 'font-size:var(--t-sm);width:44px' }, t('reps')),
           el('div', { style: 'flex:1' }, repsIn),
           el('button', { class: 'tb-btn', onclick: () => { r.ex.splice(i, 1); draw(); } }, '✕'),
         ),
@@ -652,18 +1170,312 @@ export async function saveTemplateAsRoutines(tpl) {
    TRAIN SCREEN RENDERING
    ============================================================ */
 
+/** Roughly how long a routine takes: work plus the rest between sets. */
+function routineMinutes(r) {
+  const WORK_PER_SET = 42;                    /* seconds actually under the bar */
+  let seconds = 0, sets = 0;
+  for (const x of r.ex || []) {
+    const n = x.sets || 3;
+    sets += n;
+    /* every set is worked; only the gaps BETWEEN them are rested through */
+    seconds += n * WORK_PER_SET + Math.max(0, n - 1) * (x.restSec || S.settings.restDefault);
+  }
+  /* the walk between machines, once per exercise */
+  seconds += (r.ex?.length || 0) * 45;
+  return { minutes: Math.round(seconds / 60), sets };
+}
+
+/* Fourteen muscle groups cannot be given fourteen distinguishable colours - the
+   palette validator puts the ceiling at three on a dark surface. They are
+   grouped into the three families a lifter already thinks in, which reads
+   better than naming every head of every muscle anyway. */
+const MUSCLE_FAMILY = {
+  chest: 'upper', back: 'upper', shoulders: 'upper', biceps: 'upper',
+  triceps: 'upper', forearms: 'upper', traps: 'upper',
+  quads: 'lower', hamstrings: 'lower', glutes: 'lower', calves: 'lower',
+  abs: 'core', cardio: 'core', fullbody: 'core',
+};
+const FAMILY_NAME = {
+  upper: { fa: 'بالاتنه', en: 'Upper body' },
+  lower: { fa: 'پایین‌تنه', en: 'Lower body' },
+  core:  { fa: 'مرکزی و هوازی', en: 'Core & cardio' },
+};
+
+/** Which families a routine trains, most-worked first, with their share. */
+function routineFamilies(r) {
+  const sets = new Map();
+  let total = 0;
+  for (const x of r.ex || []) {
+    const fam = MUSCLE_FAMILY[exById(x.exId)?.muscle];
+    if (!fam) continue;
+    const n = x.sets || 3;
+    sets.set(fam, (sets.get(fam) || 0) + n);
+    total += n;
+  }
+  return [...sets.entries()].sort((a, b) => b[1] - a[1]).map(([id, n]) => ({
+    id,
+    label: getLang() === 'fa' ? FAMILY_NAME[id].fa : FAMILY_NAME[id].en,
+    share: total ? n / total : 0,
+  }));
+}
+
+function agoLabel(ts) {
+  if (!ts) return null;
+  const days = Math.floor((Date.now() - ts) / 86400000);
+  if (days <= 0) return t('today');
+  if (days === 1) return t('yesterday');
+  return getLang() === 'fa' ? `${num(days)} روز پیش` : `${days} days ago`;
+}
+
+/* ---------------- the training month ---------------- */
+
+/** A date's parts in the calendar the app is showing, in Latin digits. */
+function calParts(date) {
+  const loc = getLang() === 'fa' ? 'fa-IR-u-nu-latn' : 'en-US';
+  const p = new Intl.DateTimeFormat(loc, { year: 'numeric', month: 'numeric', day: 'numeric' })
+    .formatToParts(date);
+  const get = (t) => Number(p.find(x => x.type === t)?.value);
+  return { y: get('year'), m: get('month'), d: get('day') };
+}
+
+const sameMonth = (a, b) => a.y === b.y && a.m === b.m;
+const dayKeyOf = (date) => {
+  const z = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return z.toISOString().slice(0, 10);
+};
+
+/**
+ * Every day of the month containing `seed`.
+ *
+ * Walked day by day from the seed rather than calculated, because the month
+ * being walked is Persian and its length is what Intl says it is.
+ */
+function monthDays(seed) {
+  const target = calParts(seed);
+  let first = new Date(seed);
+  for (let i = 0; i < 40 && sameMonth(calParts(new Date(first.getTime() - 86400000)), target); i++) {
+    first = new Date(first.getTime() - 86400000);
+  }
+  const days = [];
+  let cur = new Date(first);
+  while (sameMonth(calParts(cur), target) && days.length < 40) {
+    days.push(new Date(cur));
+    cur = new Date(cur.getTime() + 86400000);
+  }
+  return days;
+}
+
+/** How many days in a row, ending today or yesterday, had a workout. */
+function streakOf(trainedKeys) {
+  let n = 0;
+  let cur = new Date();
+  if (!trainedKeys.has(dayKeyOf(cur))) {
+    cur = new Date(cur.getTime() - 86400000);      /* today may not be over yet */
+    if (!trainedKeys.has(dayKeyOf(cur))) return 0;
+  }
+  while (trainedKeys.has(dayKeyOf(cur)) && n < 400) {
+    n += 1;
+    cur = new Date(cur.getTime() - 86400000);
+  }
+  return n;
+}
+
+let calSeed = new Date();
+
+export async function renderTrainCalendar() {
+  const host = $('#train-calendar');
+  if (!host) return;
+  host.replaceChildren();
+
+  const all = await history();   /* the module-local name; allWorkouts is its export */
+  const byDay = new Map();
+  for (const w of all) {
+    const list = byDay.get(w.date) || [];
+    list.push(w);
+    byDay.set(w.date, list);
+  }
+  const trainedKeys = new Set(byDay.keys());
+
+  const days = monthDays(calSeed);
+  /* Month then year. The locale's own yMMMM pattern puts the year first here,
+     which is not how Persian writes a date. */
+  const monthParts = new Intl.DateTimeFormat(getLang() === 'fa' ? 'fa-IR' : 'en-US',
+    { month: 'long', year: 'numeric' }).formatToParts(days[0] || calSeed);
+  const monthPart = (type) => monthParts.find(x => x.type === type)?.value || '';
+  const monthLabel = `${monthPart('month')} ${monthPart('year')}`;
+
+  const step = (delta) => {
+    /* 20 days lands inside the neighbouring month whatever its length */
+    calSeed = new Date(calSeed.getTime() + delta * 20 * 86400000);
+    renderTrainCalendar();
+  };
+
+  host.append(el('div', { class: 'cal-head' },
+    el('button', { class: 'cal-nav', onclick: () => step(-1) }, '‹'),
+    el('b', {}, monthLabel),
+    el('button', { class: 'cal-nav', onclick: () => step(1) }, '›')));
+
+  /* weekday letters, in the order this calendar starts its week */
+  const letters = getLang() === 'fa'
+    ? [['ش', 6], ['ی', 0], ['د', 1], ['س', 2], ['چ', 3], ['پ', 4], ['ج', 5]]
+    : [['S', 0], ['M', 1], ['T', 2], ['W', 3], ['T', 4], ['F', 5], ['S', 6]];
+  host.append(el('div', { class: 'cal-grid cal-dow' },
+    ...letters.map(([ch]) => el('span', {}, ch))));
+
+  const grid = el('div', { class: 'cal-grid' });
+  /* blanks so the first day lands under its own weekday */
+  const firstCol = letters.findIndex(([, wd]) => wd === (days[0]?.getDay() ?? 0));
+  for (let i = 0; i < Math.max(0, firstCol); i++) grid.append(el('span', { class: 'cal-blank' }));
+
+  const todayKeyStr = dayKeyOf(new Date());
+  let monthCount = 0;
+
+  for (const date of days) {
+    const key = dayKeyOf(date);
+    const list = byDay.get(key) || [];
+    const sets = list.reduce((a, w) => a + (w.sets || 0), 0);
+    if (list.length) monthCount += 1;
+
+    /* one hue, four steps: this is magnitude, not identity */
+    const level = !list.length ? 0 : sets >= 20 ? 3 : sets >= 12 ? 2 : 1;
+    const cell = el('button', {
+      class: 'cal-day' + (key === todayKeyStr ? ' today' : ''),
+      dataset: { level: String(level) },
+      title: list.length ? list.map(w => w.name).join('، ') : '',
+      onclick: () => openCalendarDay(key, list),
+    }, num(calParts(date).d));
+    /* A day in the future has not happened yet; every past day can be asked. */
+    if (key > todayKeyStr) cell.disabled = true;
+    grid.append(cell);
+  }
+  host.append(grid);
+
+  const streak = streakOf(trainedKeys);
+  host.append(el('div', { class: 'cal-foot' },
+    el('span', {}, `${t('thisMonth')}: ${num(monthCount)} ${t('workouts')}`),
+    streak > 1 ? el('b', { class: 'streak-line' },
+      icon('flame', { size: 15, cls: 'ic-lift' }),
+      el('em', {}, `${num(streak)} ${t('dayStreak')}`)) : null));
+}
+
+/**
+ * Everything one day held, from the training calendar.
+ *
+ * A day is not a shortcut to its first workout: someone who lifts in the
+ * morning and runs in the evening could not reach the evening at all. And an
+ * empty day is a real question with a real answer, so it opens too.
+ */
+async function openCalendarDay(key, list) {
+  const fa = getLang() === 'fa';
+  const body = el('div', {});
+
+  if (list.length) {
+    body.append(el('div', { class: 'day-sec' }, t('workouts')));
+    for (const w of list) {
+      body.append(el('button', {
+        class: 'day-row',
+        onclick: () => { closeSheet(); showWorkoutDetail(w); },
+      },
+        el('span', { class: 'day-ic' }, icon('dumbbell', { size: 18, cls: 'ic-lift' })),
+        el('div', {},
+          el('b', {}, w.name || t('workout')),
+          el('span', {}, [
+            `${num(w.sets || 0)} ${t('muscleSetsShort')}`,
+            w.volume ? `${num(Math.round(kgToDisp(w.volume)))}${wUnit()}` : null,
+            w.durationSec ? clock(w.durationSec) : null,
+          ].filter(Boolean).join(' · '))),
+        el('i', { class: 'sh-arrow' }, fa ? '‹' : '›')));
+    }
+  }
+
+  /* What else the day held. Read, never invented: a day with no food logged
+     says so rather than showing a zero that looks like a fast. */
+  const [logs, weight] = await Promise.all([
+    nutritionFor(key),
+    db.get('weights', key),
+  ]);
+
+  const facts = [];
+  if (logs) {
+    facts.push([icon('flame', { size: 16 }), num(Math.round(logs.kcal)), t('kcal')]);
+    facts.push([icon('meat', { size: 16 }),
+      `${num(Math.round(logs.protein))}${fa ? ' گرم' : 'g'}`, t('protein')]);
+  }
+  if (weight) facts.push([icon('scale', { size: 16 }),
+    `${num(round(kgToDisp(weight.kg), 1), 1)} ${wUnit()}`, t('weight')]);
+
+  if (facts.length) {
+    body.append(el('div', { class: 'day-sec' }, t('theDay')));
+    body.append(el('div', { class: 'day-facts' }, ...facts.map(([ic, value, label]) =>
+      el('div', { class: 'day-fact' }, ic, el('b', {}, value), el('span', {}, label)))));
+  }
+
+  if (!list.length && !facts.length) {
+    body.append(emptyArt('calendar', t('nothingThisDay'), t('nothingThisDayHint'), 'var(--tx3)'));
+  }
+
+  sheet(longDate(key), body);
+}
+
+/** The day's totals, or null when nothing was logged that day. */
+async function nutritionFor(key) {
+  const logs = await db.byIndex('foodLogs', 'date', key);
+  if (!logs.length) return null;
+  const add = (f) => logs.reduce((n, l) => n + (Number(l[f]) || 0), 0);
+  return { kcal: add('kcal'), protein: add('protein') };
+}
+
 export async function renderRoutines() {
   const host = $('#routine-list');
   host.replaceChildren();
   const rs = await getRoutines();
   if (!rs.length) host.append(emptyArt('clipboard', t('empty'),
     getLang() === 'fa' ? 'با ویزارد بالا یکی بساز' : 'Build one with the wizard above', 'var(--blue)'));
-  rs.forEach(r => host.append(el('div', { class: 'li' },
-    el('div', { class: 'li-main', onclick: () => routineMenu(r) },
-      el('b', {}, r.name),
-      el('span', {}, r.ex.map(x => exName(x.exId)).slice(0, 3).join('، ') + (r.ex.length > 3 ? ' …' : ''))),
-    el('button', { class: 'btn sm', onclick: (e) => { e.stopPropagation(); startWorkout({ ...r, routineId: r.id }); } }, t('start')),
-  )));
+
+  /* when each routine was last actually done */
+  const history = await db.all('workouts');
+  const lastDone = new Map();
+  for (const w of history) {
+    if (!w.routineId) continue;
+    const at = w.start || 0;
+    if (at > (lastDone.get(w.routineId) || 0)) lastDone.set(w.routineId, at);
+  }
+
+  rs.forEach(r => {
+    const { minutes, sets } = routineMinutes(r);
+    const families = routineFamilies(r);
+    const ago = agoLabel(lastDone.get(r.id));
+
+    const stat = (value, label) => el('div', { class: 'rc-stat' },
+      el('b', {}, value), el('span', {}, label));
+
+    host.append(el('div', { class: 'routine-card', onclick: () => routineMenu(r) },
+      el('div', { class: 'rc-head' },
+        el('b', {}, r.name),
+        ago ? el('span', { class: 'rc-ago' }, ago) : el('span', { class: 'rc-ago new' }, t('neverDone'))),
+
+      families.length ? el('div', { class: 'rc-families' },
+        /* a bar showing how the sets are split, then the same families named -
+           the label is what carries identity, the colour only reinforces it */
+        el('div', { class: 'rc-split' },
+          ...families.map(f => el('i', { dataset: { fam: f.id },
+            style: `flex:${Math.max(1, Math.round(f.share * 100))}` }))),
+        el('div', { class: 'rc-chips' },
+          ...families.map(f => el('span', { class: 'rc-chip', dataset: { fam: f.id } },
+            el('i', {}), f.label,
+            el('b', {}, `${num(Math.round(f.share * 100))}٪`)))),
+      ) : null,
+
+      el('div', { class: 'rc-stats' },
+        stat(num(r.ex.length), t('exercises')),
+        stat(num(sets), t('sets')),
+        stat('~' + num(minutes), t('minutes'))),
+
+      el('button', { class: 'btn rc-start', onclick: (e) => {
+        e.stopPropagation(); startWorkout({ ...r, routineId: r.id });
+      } }, lineIcon('play', { size: 17 }), t('startRoutine')),
+    ));
+  });
 
   const th = $('#template-list');
   th.replaceChildren();
@@ -682,7 +1494,8 @@ function routineMenu(r) {
     el('hr', { class: 'sep' }),
     ...r.ex.map(x => el('div', { class: 'li' },
       el('div', { class: 'li-main' }, el('b', {}, exName(x.exId))),
-      el('div', { class: 'li-end' }, el('b', {}, `${num(x.sets)} × ${x.reps || '—'}`)))),
+      el('div', { class: 'li-end' },
+        el('b', {}, `${num(x.sets)} × ${x.reps ? numText(x.reps) : '—'}`)))),
   );
   sheet(r.name, body);
 }
@@ -720,8 +1533,17 @@ export async function renderHistory() {
   )));
 }
 
-export function showWorkoutDetail(w) {
+export function showWorkoutDetail(w, justFinished = null) {
+  /* Only when the workout has this second been saved. Opening a workout
+     from June to look at it is not an occasion for congratulation. */
+  const said = justFinished ? afterWorkout(justFinished, (v) => num(v)) : null;
+  const pouya = said
+    ? pouyaCard({ line: getLang() === 'fa' ? said.fa : said.en, mood: said.mood,
+      fa: getLang() === 'fa' })
+    : null;
+
   const body = el('div', {},
+    pouya?.node || null,
     el('div', { class: 'card summary-bar', style: 'margin-bottom:14px' },
       el('div', {}, el('b', {}, durLabel(((w.end || w.start) - w.start) / 1000)), el('span', {}, t('duration'))),
       el('div', {}, el('b', {}, num(Math.round(kgToDisp(w.volume || workoutVolume(w)))) + wUnit()), el('span', {}, t('volume'))),
@@ -754,7 +1576,7 @@ export function showWorkoutDetail(w) {
       }
     } }, t('delete')),
   );
-  sheet(w.name + ' · ' + shortDate(w.date), body);
+  sheet(w.name + ' · ' + shortDate(w.date), body, { onClose: () => pouya?.dispose() });
 }
 
 export async function renderExerciseList() {
@@ -778,17 +1600,175 @@ export async function renderExerciseList() {
   });
 }
 
+/**
+ * Everything the workouts say about one muscle.
+ *
+ * Opened by tapping the body. Counting only - no model, no network, and
+ * nothing claimed that the training log does not actually contain.
+ */
+export async function openMuscleSheet(muscle) {
+  const info = MUSCLES.find((m) => m.id === muscle);
+  if (!info) return;
+  const ws = await history();
+  const index = {};
+  for (const w of ws) for (const x of w.exercises || []) {
+    const e = exById(x.exId);
+    if (e) index[x.exId] = e;
+  }
+  const r = muscleStats(ws, index)[muscle];
+  const fa = getLang() === 'fa';
+
+  /* how long ago, in words rather than a date */
+  const ago = r.daysSince === null ? null
+    : r.daysSince === 0 ? t('today')
+    : r.daysSince === 1 ? t('yesterday')
+    : `${num(r.daysSince)} ${t('daysAgo')}`;
+
+  const key = recencyOf(r.daysSince);
+  const RECENCY_TEXT = {
+    justTrained: 'recJustTrained', trainedRecently: 'recTrainedRecently',
+    aWhileAgo: 'recAWhileAgo', longAgo: 'recLongAgo', untrained: 'recUntrained',
+  };
+
+  const stat = (value, label) => el('div', { class: 'ms-stat' },
+    el('b', {}, value), el('span', {}, label));
+
+  const body = el('div', { class: 'ms-body' },
+    /* the figure, with this muscle alone picked out */
+    el('div', { class: 'ms-fig' },
+      bodyMap({ focus: muscle, selected: [muscle], view: sideOf(muscle) })),
+
+    /* what the log says about how recently */
+    el('div', { class: 'ms-recency', style: `--tone:${RECENCY_TONE[key]}` },
+      el('b', {}, t(RECENCY_TEXT[key])),
+      ago ? el('span', {}, `${t('muscleLastTrained')}: ${ago}`) : null),
+
+    r.sets30 ? el('div', { class: 'ms-stats' },
+      stat(num(r.sets7), t('muscleWeekSets')),
+      stat(num(r.sessions7), t('muscleWeekSessions')),
+      stat(num(r.sets30), t('muscleMonthSets')),
+    ) : null,
+
+    /* the trend, only when there is a week before this one to compare to */
+    r.volumeTrend === null ? null
+      : el('div', { class: 'ms-trend' + (r.volumeTrend >= 0 ? ' up' : ' down') },
+          el('b', {}, (r.volumeTrend >= 0 ? '+' : '\u2212') + num(Math.abs(r.volumeTrend)) + '%'),
+          el('span', {}, t('muscleTrend'))),
+
+    r.byExercise.length
+      ? el('div', { class: 'ms-list' },
+          el('h4', {}, t('muscleExercises')),
+          ...r.byExercise.slice(0, 6).map((e) => el('div', { class: 'ms-ex' },
+            el('b', {}, e.name),
+            el('span', {}, `${num(e.sets)} ${t('muscleSetsShort')}`
+              + (e.topWeight ? ` \u00b7 ${num(round(kgToDisp(e.topWeight), 1))}${wUnit()}` : '')))))
+      : el('div', { class: 'empty' }, t('muscleNoData')),
+
+    el('div', { class: 'ms-note' }, t('recencyNote')),
+
+    el('button', { class: 'btn full', style: 'margin-top:14px', onclick: () => {
+      closeSheet();
+      window.dispatchEvent(new CustomEvent('show-muscle-exercises', { detail: muscle }));
+    } }, fa ? `حرکت‌های ${pick(info)}` : `${pick(info)} exercises`),
+  );
+
+  sheet(pick(info), body);
+}
+
+/** The side a muscle shows best from, so the sheet opens on the right view. */
+function sideOf(muscle) {
+  return ['back', 'triceps', 'glutes', 'hamstrings', 'traps'].includes(muscle)
+    ? 'back' : 'front';
+}
+
 export function buildExerciseFilters() {
   const host = $('#ex-filters');
   host.replaceChildren();
+
+  const select = (id) => {
+    $$('#ex-filters .chip').forEach(x => x.classList.toggle('on', x.dataset.m === id));
+    drawPicker(id);
+    renderExerciseList();
+  };
+
+  /* The chips stay: they are still the fastest way to reach "all", and they
+     name the muscles for anyone who would rather read than aim. */
   MUSCLES.forEach((m, i) => {
-    const b = el('button', { class: 'chip' + (i === 0 ? ' on' : ''), dataset: { m: m.id }, onclick: () => {
-      $$('#ex-filters .chip').forEach(x => x.classList.remove('on'));
-      b.classList.add('on'); renderExerciseList();
-    } }, pick(m));
-    host.append(b);
+    host.append(el('button', {
+      class: 'chip' + (i === 0 ? ' on' : ''), dataset: { m: m.id },
+      onclick: () => select(m.id),
+    }, pick(m)));
   });
+
+  /* And the body, because a list organised by muscle is most naturally
+     indexed by pointing at one. */
+  const picker = $('#ex-body');
+  if (!picker) return;
+
+  /* What the figure glows with: the same seven-day set counts the muscle
+     sheet reads, so the body and the numbers can never disagree.
+
+     Fetched alongside rather than awaited: buildExerciseFilters is called
+     from several places and making it async would make every one of their
+     timings a question. The body appears at once and lights when the counts
+     arrive, which is better than a body that arrives late. */
+  let heat = {};
+  const figures = new Set();
+  history().then((hs) => {
+    heat = heatFrom(muscleStats(hs, EX_INDEX));
+    for (const f of figures) f.setHeat(heat);
+  });
+
+  /* Tapping the muscle you are already filtered to asks about it rather than
+     toggling back to "all" - the chips are there for that, and the second tap
+     is the one that means "tell me more". */
+  const pick3d = (m) => (m === currentMuscle() ? openMuscleSheet(m) : select(m));
+
+  function drawPicker(id) {
+    picker.replaceChildren(
+      el('div', { class: 'body-view seg tight' },
+        ...[['3d', t('view3d')], ['flat', t('viewFlat')]].map(([mode, label]) =>
+          el('button', {
+            class: 'seg-btn' + (bodyView === mode ? ' active' : ''),
+            onclick: () => { if (bodyView !== mode) { bodyView = mode; drawPicker(currentMuscle()); } },
+          }, label))),
+    );
+
+    if (bodyView === '3d') {
+      const fig = body3d({ heat, onPick: pick3d, scale: 0.94 });
+      for (const old of figures) old.dispose?.();   /* stop its idle drift */
+      figures.clear();                 /* only the one on screen matters */
+      figures.add(fig);
+      fig.node.append(el('div', { class: 'b3d-hint' }, t('turnHint')));
+      fig.node.setAttribute('aria-label', t('bodyFigureLabel'));
+      picker.append(fig.node);
+      return;
+    }
+    for (const old of figures) old.dispose?.();
+    figures.clear();
+
+    picker.append(bodyMap({
+      selected: id && id !== 'all' ? [id] : [],
+      focus: id !== 'all' ? id : null,
+      heat,
+      onPick: pick3d,
+    }));
+  }
+  drawPicker('all');
 }
+
+/* Which body the exercises tab is showing. Remembered for the session: it is
+   a preference about how you like to look at a body, not about this visit. */
+let bodyView = '3d';
+
+/** Filter the exercise list to a muscle, once the shell has shown the tab. */
+export function filterToMuscle(muscle) {
+  const b = $(`#ex-filters .chip[data-m="${muscle}"]`);
+  if (b) b.click();
+}
+
+/** Which muscle the exercise list is filtered to right now. */
+const currentMuscle = () => $('#ex-filters .chip.on')?.dataset.m || 'all';
 
 async function exerciseDetail(e, rec) {
   const hs = await history();
@@ -800,7 +1780,31 @@ async function exerciseDetail(e, rec) {
     if (best) points.push({ x: shortDate(w.date), y: round(kgToDisp(best), 1) });
   }
   const chart = el('div', { class: 'chart' });
+
+  /* What the movement looks like, before anything else. Someone opening an
+     exercise they have not done is asking exactly that, and the sheet used to
+     answer with a muscle name and a chart of one-rep maxes.
+
+     It is labelled as the pattern it is: "Press" under a dumbbell shoulder
+     press is true, and a drawing claiming to *be* that exercise would not be. */
+  const moveId = moveFor(e);
+  const move = moveId ? MOVES[moveId] : null;
+  /* The same body the focus screen performs on, because the side-view
+     drawing does not know what a bench is: it would draw the chest press
+     that opens this sheet standing upright, which is the thing that had to
+     be fixed everywhere else. */
+  const figure = moveId
+    ? body3d({ move: moveId, scale: 0.42, ms: 2800, load: true })
+    : null;
+  const movePanel = figure?.node ? el('div', { class: 'mv-card mv-card-3d' },
+    figure.node,
+    el('span', { class: 'mv-name' }, getLang() === 'fa' ? move.fa : move.en),
+    el('span', { class: 'mv-hint' }, getLang() === 'fa' ? move.hint.fa : move.hint.en),
+    el('span', { class: 'mv-note' }, t('movePatternNote')),
+  ) : null;
+
   const body = el('div', {},
+    movePanel,
     el('div', { class: 'info' },
       `${pick(MUSCLES.find(m => m.id === e.muscle) || {})} · ${pick(EQUIPMENT.find(x => x.id === e.equip) || {})}`),
     rec ? el('div', { class: 'card summary-bar' },
@@ -823,7 +1827,7 @@ async function exerciseDetail(e, rec) {
       }
     } }, t('delete')) : null,
   );
-  sheet(pick(e), body);
+  sheet(pick(e), body, { onClose: () => figure?.dispose() });
   if (points.length > 1) {
     const { lineChart } = await import('./ui.js');
     lineChart(chart, points.slice(-14), { color: '#3ddc84' });

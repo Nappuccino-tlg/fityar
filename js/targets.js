@@ -2,6 +2,7 @@
 import { S, bmr, tdee, ACTIVITY_FACTOR, GOAL_ADJUST, kgToDisp, wUnit,
          proteinBasisKg, fiberGoal, bmi } from './store.js';
 import { t, num, getLang } from './i18n.js';
+import { metricIcon } from './icons.js';
 import { el, round } from './ui.js';
 import { ART } from './art.js';
 
@@ -37,17 +38,25 @@ export function breakdown(p = S.profile, g = S.goals) {
 }
 
 const MACROS = [
-  { key: 'protein', icon: '🥩', color: 'var(--blue)',   unit: 'g' },
-  { key: 'carbs',   icon: '🍞', color: 'var(--orange)', unit: 'g' },
-  { key: 'fat',     icon: '🥑', color: 'var(--pink)',   unit: 'g' },
-  { key: 'fiber',   icon: '🌾', color: 'var(--purple)', unit: 'g' },
+  { key: 'protein', color: 'var(--blue)',   unit: 'g' },
+  { key: 'carbs',   color: 'var(--orange)', unit: 'g' },
+  { key: 'fat',     color: 'var(--pink)',   unit: 'g' },
+  { key: 'fiber',   color: 'var(--purple)', unit: 'g' },
 ];
 
 /**
  * The headline card: how much of everything you need in a day,
  * with one plain sentence explaining each figure.
  */
-export function targetsCard({ compact = false } = {}) {
+/**
+ * What the day asks for, and why.
+ *
+ * `quiet` keeps every number and folds the reasoning behind a question mark
+ * — "2.0 g per kg of bodyweight" is worth reading once and worth not
+ * reading the other hundred times you open the home screen. Nothing is
+ * deleted; one tap brings all of it back.
+ */
+export function targetsCard({ compact = false, quiet = false } = {}) {
   const fa = getLang() === 'fa';
   const b = breakdown();
   const wu = wUnit();
@@ -78,14 +87,24 @@ export function targetsCard({ compact = false } = {}) {
       : `${num(b.waterPerKg)} ml per kg of bodyweight.`,
   };
 
-  const card = el('div', { class: 'card targets-card' });
+  const card = el('div', { class: 'card targets-card' + (quiet ? ' tc-quiet' : '') });
   const art = ART.target();
   art.classList.add('tc-art');
   card.append(art);
 
-  card.append(el('div', { class: 'card-head' },
+  const head = el('div', { class: 'card-head' },
     el('h3', {}, fa ? 'نیاز روزانه‌ی تو' : 'What you need per day'),
-    el('span', { class: 'chip on', style: 'font-size:10.5px' }, t(S.profile.goal))));
+    el('span', { class: 'chip on', style: 'font-size:var(--t-xs)' }, t(S.profile.goal)));
+  if (quiet) {
+    head.append(el('button', {
+      class: 'tc-why-btn', 'aria-label': t('whyThis'), title: t('whyThis'),
+      onclick: () => {
+        const open = card.classList.toggle('tc-open');
+        card.querySelector('.tc-why-btn').setAttribute('aria-expanded', String(open));
+      },
+    }, '؟'));
+  }
+  card.append(head);
 
   /* calories headline */
   card.append(el('div', { class: 'tc-hero' },
@@ -101,13 +120,14 @@ export function targetsCard({ compact = false } = {}) {
         chainStep(t('goalType'), num(Math.abs(b.adjustPct)) + '٪'.replace('٪', fa ? '٪' : '%'))),
       el('p', {}, why.kcal))));
 
-  /* macro rows */
+  /* macro rows — protein, carbs, fat with their share of the day */
   const list = el('div', { class: 'tc-list' });
-  MACROS.forEach(m => {
-    const value = m.key === 'fiber' ? b.fiber : b[m.key];
-    const pct = m.key === 'fiber' ? null : b.split[m.key[0]];
+  MACROS.slice(0, 3).forEach(m => {
+    const value = b[m.key];
+    const pct = b.split[m.key[0]];
     list.append(el('div', { class: 'tc-row', style: `--tcc:${m.color}` },
-      el('span', { class: 'tc-ico' }, m.icon),
+      el('span', { class: 'tc-ico', style: `color:${m.color}` },
+        metricIcon(m.key, { size: 19, cls: 'ic-lift' })),
       el('div', { class: 'tc-mid' },
         el('b', {}, t(m.key)),
         el('span', {}, why[m.key])),
@@ -115,22 +135,36 @@ export function targetsCard({ compact = false } = {}) {
         el('b', {}, num(value) + m.unit),
         pct !== null && pct !== undefined ? el('span', {}, num(pct) + (fa ? '٪' : '%')) : null)));
   });
-  list.append(el('div', { class: 'tc-row', style: '--tcc:var(--blue)' },
-    el('span', { class: 'tc-ico' }, '💧'),
-    el('div', { class: 'tc-mid' },
-      el('b', {}, t('water')),
-      el('span', {}, why.water)),
-    el('div', { class: 'tc-val' }, el('b', {}, num(b.water) + ' ml'))));
+  /* fiber + water as one compact secondary row — full rows were noise:
+     they are floors and glasses, not macros competing for calories */
+  list.append(el('div', { class: 'tc-mini' },
+    el('div', { class: 'tc-mini-cell', style: '--tcc:var(--purple)' },
+      el('span', { class: 'tc-ico', style: 'color:var(--purple)' },
+        metricIcon('fiber', { size: 16, cls: 'ic-lift' })),
+      el('div', { class: 'tc-mini-mid' }, el('b', {}, t('fiber')), el('span', {}, why.fiber)),
+      el('b', { class: 'tc-mini-val' }, num(b.fiber) + 'g')),
+    el('div', { class: 'tc-mini-cell', style: '--tcc:var(--blue)' },
+      el('span', { class: 'tc-ico', style: 'color:var(--blue)' },
+        metricIcon('water', { size: 16, cls: 'ic-lift' })),
+      el('div', { class: 'tc-mini-mid' }, el('b', {}, t('water')), el('span', {}, why.water)),
+      el('b', { class: 'tc-mini-val' }, num(b.water) + ' ml'))));
   card.append(list);
 
   if (!compact) {
+    /* the macros should add up to the calorie goal — say so and prove it */
+    const pK = b.protein * 4, cK = b.carbs * 4, fK = b.fat * 9;
+    const sumK = pK + cK + fK;
+    const ok = Math.abs(sumK - b.kcal) <= b.kcal * 0.05;
     card.append(el('div', { class: 'tc-bar' },
       el('i', { style: `flex:${b.split.p};background:var(--blue)` }),
       el('i', { style: `flex:${b.split.c};background:var(--orange)` }),
       el('i', { style: `flex:${b.split.f};background:var(--pink)` })));
-    card.append(el('div', { class: 'muted', style: 'font-size:11.5px;text-align:center;margin-top:8px' },
-      fa ? 'این اعداد از قد، وزن، سن، جنسیت و حجم تمرین تو حساب شده‌اند.'
-         : 'Calculated from your height, weight, age, sex and training load.'));
+    card.append(el('div', { class: 'muted', style: 'font-size:var(--t-sm);text-align:center;margin-top:8px' },
+      ok
+        ? (fa ? `جمع ماکروها: ${num(sumK)} کالری از هدف ${num(b.kcal)} — هماهنگ ✓`
+              : `Macros add up to ${num(sumK)} of ${num(b.kcal)} kcal — consistent ✓`)
+        : (fa ? `جمع ماکروها ${num(sumK)} کالری — با هدف ${num(b.kcal)} هماهنگ نیست`
+              : `Macros total ${num(sumK)} kcal — off the ${num(b.kcal)} kcal goal`)));
   }
   return card;
 }
@@ -143,13 +177,14 @@ function chainStep(label, value) {
 export function targetsStrip() {
   const b = breakdown();
   return el('div', { class: 'tc-strip' },
-    pill('🔥', num(b.kcal), t('kcal'), 'var(--acc)'),
-    pill('🥩', num(b.protein) + 'g', t('protein'), 'var(--blue)'),
-    pill('🍞', num(b.carbs) + 'g', t('carbs'), 'var(--orange)'),
-    pill('🥑', num(b.fat) + 'g', t('fat'), 'var(--pink)'),
+    pill('kcal', num(b.kcal), t('kcal'), 'var(--acc)'),
+    pill('protein', num(b.protein) + 'g', t('protein'), 'var(--blue)'),
+    pill('carbs', num(b.carbs) + 'g', t('carbs'), 'var(--orange)'),
+    pill('fat', num(b.fat) + 'g', t('fat'), 'var(--pink)'),
   );
 }
-function pill(icon, value, label, color) {
+function pill(key, value, label, color) {
   return el('div', { class: 'tcp', style: `--pc:${color}` },
-    el('span', {}, icon), el('b', {}, value), el('i', {}, label));
+    el('span', { class: 'tcp-ic' }, metricIcon(key, { size: 15, cls: 'ic-lift' })),
+    el('b', {}, value), el('i', {}, label));
 }

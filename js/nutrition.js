@@ -1,11 +1,13 @@
 /* ============ Nutrition: diary, food picker, AI photo scan ============ */
 import * as db from './db.js';
-import { S, MEAL_KEYS, MEAL_ICON, workoutKcal, aiConfig, hasAI } from './store.js';
+import { mealIcon, metricIcon, lineIcon } from './icons.js';
+import { S, MEAL_KEYS, workoutKcal, aiConfig, hasAI } from './store.js';
 import { t, num, pick, getLang } from './i18n.js';
 import {
-  $, el, sheet, closeSheet, confirmSheet, toast, loading, field, input, select,
+  $, $$, el, sheet, closeSheet, confirmSheet, toast, loading, field, input, select,
   segmented, round, sum, parseNum, todayKey, dateKey, addDays, dateLabel, shortDate, buzz,
 } from './ui.js';
+import { countTo, pop, flyTo } from './motion.js';
 import { FOODS, FOOD_CATS, FOOD_INDEX, searchFoods } from './data-foods.js';
 import { statusOf, STATUS_COLOR, closeDay, reportSheet, getReport } from './report.js';
 import { emptyArt } from './art.js';
@@ -88,7 +90,7 @@ export function scaleFood(food, grams) {
   };
 }
 
-async function allFoods() {
+export async function allFoods() {
   const custom = await db.all('foods');
   return [...custom, ...FOODS];
 }
@@ -106,27 +108,72 @@ async function recentFoods(limit = 24) {
   return [...seen.values()];
 }
 
+/**
+ * The calories you just logged, flying to the number that now holds them.
+ *
+ * `from` is the rectangle of whatever was pressed, captured before the sheet
+ * closes. The target is whichever running total is actually on screen - the
+ * diary's day figure, or the ring on the home screen - and if neither is
+ * (the user navigated away mid-save) nothing happens, which is correct.
+ */
+export function showLogLanding(from, kcal, meal) {
+  if (!from || !(kcal > 0)) return;
+  requestAnimationFrame(() => requestAnimationFrame(async () => {
+    const diaryOpen = !document.getElementById('screen-diary')?.hidden;
+    const target = diaryOpen ? $('#dsum-kcal') : $('#kcal-left');
+    if (!target) return;
+    await flyTo(from, target, '+' + num(Math.round(kcal)), { cls: 'fly-kcal' });
+    pop(target.closest('.ring-center, .dsum-main, .dsum') || target);
+    if (meal) pop(document.querySelector(`.meal[data-meal="${meal}"] .meal-head`));
+  }));
+}
+
 /* ---------------- diary screen ---------------- */
+
+/** The meal it is currently time for, so an empty day opens the right one. */
+function mealNow() {
+  const h = new Date().getHours();
+  if (h < 10) return 'breakfast';
+  if (h < 16) return 'lunch';
+  if (h < 22) return 'dinner';
+  return 'snack';
+}
 
 export async function renderDiary() {
   const date = S.date;
   $('#d-label').textContent = dateLabel(date);
   const { logs, kcal, protein, carbs, fat } = await daySummary(date);
 
-  $('#dsum-kcal').textContent = num(kcal);
-  $('#dsum-p').textContent = num(protein, protein % 1 ? 1 : 0) + 'g';
-  $('#dsum-c').textContent = num(carbs, carbs % 1 ? 1 : 0) + 'g';
-  $('#dsum-f').textContent = num(fat, fat % 1 ? 1 : 0) + 'g';
+  /* the glyph goes in once; the numbers are rewritten on every render */
+  for (const cell of $$('.summary-bar [data-metric]')) {
+    if (!cell.querySelector('.ic')) {
+      cell.prepend(el('span', { class: 'ds-ic' },
+        metricIcon(cell.dataset.metric, { size: 25, cls: 'ic-lift' })));
+    }
+  }
+  countTo($('#dsum-kcal'), kcal, { format: v => num(Math.round(v)) });
+  const gram = v => num(Math.round(v * 10) / 10, (Math.round(v * 10) / 10) % 1 ? 1 : 0) + 'g';
+  countTo($('#dsum-p'), protein, { format: gram });
+  countTo($('#dsum-c'), carbs, { format: gram });
+  countTo($('#dsum-f'), fat, { format: gram });
 
   const host = $('#diary-meals');
   host.replaceChildren();
+
+  /* A day with nothing in it gets a proper invitation rather than four
+     identical empty boxes. The meal it offers is the one it is time for. */
+  if (!logs.length) {
+    host.append(emptyArt('plate', t('dayEmpty'), t('dayEmptyHint'), 'var(--orange)', {
+      label: t('addFood'), onClick: () => openAddMenu(mealNow()),
+    }));
+  }
 
   for (const mk of MEAL_KEYS) {
     const items = logs.filter(l => l.meal === mk);
     const mkcal = Math.round(sum(items, x => x.kcal));
     const box = el('div', { class: 'meal', dataset: { meal: mk } },
       el('div', { class: 'meal-head' },
-        el('div', { class: 'mi' }, MEAL_ICON[mk]),
+        el('div', { class: 'mi' }, mealIcon(mk, { size: 21, cls: 'ic-lift' })),
         el('b', {}, t(mk)),
         el('span', { class: 'kc' }, `${num(mkcal)} ${t('kcal')}`),
       ),
@@ -141,7 +188,7 @@ export async function renderDiary() {
     if (items.length) {
       foot.append(el('button', { class: 'meal-save', onclick: async () => {
         const m = await import('./meals.js'); m.saveMealFromDay(date, mk);
-      } }, '⭐ ' + t('saveMeal')));
+      } }, lineIcon('star', { size: 15 }), t('saveMeal')));
     }
     box.append(foot);
     host.append(box);
@@ -155,14 +202,14 @@ export async function renderDiary() {
   if (yestLogs.length) {
     quick.append(el('button', { class: 'btn ghost sm', onclick: async () => {
       const m = await import('./meals.js'); await m.copyDay(yest, date);
-    } }, '⧉ ' + t('repeatYesterday')));
+    } }, lineIcon('copy', { size: 15 }), t('repeatYesterday')));
   }
   quick.append(el('button', { class: 'btn ghost sm', onclick: async () => {
     const m = await import('./meals.js'); m.openCopyDay();
   } }, t('repeatDay')));
   quick.append(el('button', { class: 'btn ghost sm', onclick: async () => {
     const m = await import('./meals.js'); m.openSavedMeals();
-  } }, '⭐ ' + t('savedMeals')));
+  } }, lineIcon('star', { size: 15 }), t('savedMeals')));
 
   /* closed-day banner / close button */
   const rep = await getReport(date);
@@ -178,7 +225,8 @@ export async function renderDiary() {
       el('span', { class: 'cb-arrow' }, '›')));
   } else if (logs.length) {
     cta.append(el('button', { class: 'btn ghost full close-day-btn', onclick: () => closeDayFlow(date) },
-      '🌙 ' + t('closeDay')));
+      el('span', { class: 'meal-name' },
+        mealIcon('dinner', { size: 16 }), el('em', {}, t('closeDay')))));
   }
 
   const noteEl = $('#day-note');
@@ -241,24 +289,42 @@ async function openEditLog(it) {
 /* ---------------- add menu ---------------- */
 
 export function openAddMenu(meal = 'snack') {
-  const mk = (icon, label, sub, fn) => el('button', { class: 'row-btn', onclick: () => { closeSheet(); fn(); } },
-    el('span', { class: 'mi', style: 'width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--card2);font-size:17px' }, icon),
+  /* Each choice takes its own colour: six tinted tiles read as six choices,
+     where six grey ones read as a list. */
+  const TONE = {
+    camera: 'var(--orange)', search: 'var(--acc)', pencil: 'var(--blue)',
+    book: 'var(--teal)', chat: 'var(--purple)', tag: 'var(--pink)',
+    star: 'var(--warn)', hand: 'var(--indigo)', swap: 'var(--red)',
+  };
+  const mk = (name, label, sub, fn) => el('button', { class: 'row-btn', onclick: () => { closeSheet(); fn(); } },
+    el('span', { class: 'am-ic', style: `--amc:${TONE[name] || 'var(--tx2)'}` },
+      lineIcon(name, { size: 19 })),
     el('span', { style: 'display:flex;flex-direction:column;gap:2px' },
-      el('b', { style: 'font-size:14.5px;font-weight:600' }, label),
-      el('span', { class: 'muted', style: 'font-size:11.5px' }, sub)),
+      el('b', { style: 'font-size:var(--t-lg);font-weight:600' }, label),
+      el('span', { class: 'muted', style: 'font-size:var(--t-sm)' }, sub)),
   );
   const body = el('div', {},
-    mk('📷', t('scanMeal'), getLang() === 'fa' ? 'عکس بگیرید، هوش مصنوعی کالری را تخمین می‌زند' : 'Snap a photo, AI estimates the calories', () => openPhotoScan(meal)),
-    mk('🔍', t('searchFood'), getLang() === 'fa' ? 'از پایگاه داده غذاها' : 'From the food database', () => openFoodPicker(meal)),
-    mk('✏️', t('createFood'), getLang() === 'fa' ? 'ساخت غذای دلخواه با مقادیر خودتان' : 'Your own food with your numbers', () => openCreateFood(meal)),
-    mk('💬', getLang() === 'fa' ? 'توصیف با متن' : 'Describe in words', getLang() === 'fa' ? 'مثلاً «دو تخم‌مرغ نیمرو با نان»' : 'e.g. “two fried eggs with bread”', () => openTextEstimate(meal)),
-    mk('🏷️', t('scanBarcode'), getLang() === 'fa' ? 'یک بار یاد بگیرد، همیشه بشناسد' : 'Teach it once, it remembers', async () => {
+    mk('camera', t('scanMeal'), getLang() === 'fa' ? 'عکس بگیرید، هوش مصنوعی کالری را تخمین می‌زند' : 'Snap a photo, AI estimates the calories', () => openPhotoScan(meal)),
+    mk('search', t('searchFood'), getLang() === 'fa' ? 'از پایگاه داده غذاها' : 'From the food database', () => openFoodPicker(meal)),
+    mk('pencil', t('createFood'), getLang() === 'fa' ? 'ساخت غذای دلخواه با مقادیر خودتان' : 'Your own food with your numbers', () => openCreateFood(meal)),
+    mk('book', t('myFoods'), getLang() === 'fa'
+        ? 'غذاهایی که خودتان ساخته‌اید' : 'The foods you made yourself',
+      () => openMyFoods(meal)),
+    mk('chat', getLang() === 'fa' ? 'توصیف با متن' : 'Describe in words', getLang() === 'fa' ? 'مثلاً «دو تخم‌مرغ نیمرو با نان»' : 'e.g. “two fried eggs with bread”', () => openTextEstimate(meal)),
+    mk('tag', t('scanBarcode'), getLang() === 'fa' ? 'یک بار یاد بگیرد، همیشه بشناسد' : 'Teach it once, it remembers', async () => {
       const bc = await import('./barcode.js'); bc.openScanner(meal);
     }),
-    mk('⭐', t('savedMeals'), getLang() === 'fa' ? 'وعده‌های همیشگی‌ات با یک ضربه' : 'Your usual combos in one tap', async () => {
+    mk('star', t('savedMeals'), getLang() === 'fa' ? 'وعده‌های همیشگی‌ات با یک ضربه' : 'Your usual combos in one tap', async () => {
       const m = await import('./meals.js'); m.openSavedMeals(meal);
     }),
-    mk('🖐️', t('portionGuide'), t('portionGuideSub'), async () => {
+    mk('chat', getLang() === 'fa' ? 'مربی پروتئین' : 'Protein coach', getLang() === 'fa' ? 'پیشنهاد غذا بر اساس خلأ امروز' : 'Foods picked to fill today\u2019s gap', async () => {
+      await openProteinCoach(meal);
+    }),
+    mk('swap', t('cmpTitle'), t('cmpHomeSub'), async () => {
+      const { openCompare } = await import('./compare.js');
+      openCompare();
+    }),
+    mk('hand', t('portionGuide'), t('portionGuideSub'), async () => {
       const m = await import('./meals.js'); m.openPortionGuide();
     }),
   );
@@ -298,18 +364,23 @@ export async function openFoodPicker(meal = 'snack') {
       list.append(el('div', { class: 'empty' }, t('empty')));
       return;
     }
-    res.forEach(f => list.append(el('div', { class: 'li', onclick: () => openPortion(f, meal) },
+    res.forEach(f => {
+      list.append(el('div', { class: 'li', onclick: () => openPortion(f, meal) },
       el('div', { class: 'li-main' },
-        el('b', {}, pick(f)),
+        el('b', {}, pick(f),
+          f.brand ? el('span', { class: 'brand-tag' }, f.brand) : null),
         el('span', {}, `${num(f.kcal)} ${t('kcal')} / 100${unitOf(f)} · P${num(round(f.p))} C${num(round(f.c))} F${num(round(f.f))}`)),
       el('div', { class: 'li-end' }, el('b', {}, '+')),
-    )));
+      ));
+    });
   }
 
   function recentRow(r) {
-    return el('div', { class: 'li', onclick: async () => {
+    return el('div', { class: 'li', onclick: async (ev) => {
+      const from = ev.currentTarget.getBoundingClientRect();
       await addLog({ ...r, id: undefined, date: S.date, meal, createdAt: undefined });
       closeSheet(); toast(t('done'), 'ok'); buzz(); refreshAll();
+      showLogLanding(from, r.kcal, meal);
     } },
       el('div', { class: 'li-main' },
         el('b', {}, pick(r)),
@@ -324,19 +395,43 @@ export async function openFoodPicker(meal = 'snack') {
   setTimeout(() => q.focus(), 120);
 }
 
-/** Portion chooser for a database food. */
-function openPortion(food, meal) {
+/**
+ * Protein-first corner of the diary: when today's protein is behind, this
+ * sheet suggests foods from the person's own database, portioned to fill
+ * the gap. Nothing invented — every suggestion is a real, loggable food.
+ */
+export async function openProteinCoach(meal = 'snack') {
+  const smart = await import('./smart.js');
+  const card = await smart.proteinCoachCard();
+  const fa = getLang() === 'fa';
+  if (!card) {
+    sheet(fa ? 'مربی پروتئین' : 'Protein coach',
+      el('div', { class: 'info' }, fa ? 'پروتئین امروزت خوب پیش می‌رود — نیازی به پیشنهاد نیست 👌' : 'Protein is on track today — nothing to suggest 👌'));
+    return;
+  }
+  sheet(fa ? 'مربی پروتئین' : 'Protein coach', el('div', {}, card));
+}
+
+/**
+ * Portion chooser for a database food.
+ *
+ * `start` is a suggested amount to open on — the protein coach knows what
+ * portion would fill today's gap, and opening on that number saves the one
+ * step while still leaving every other number reachable.
+ */
+export function openPortion(food, meal, start = 0) {
   const liq = isLiquid(food);
   const unit = unitOf(food);
   const presets = [[`100 ${unit}`, 100], ...(food.servings || [])];
-  const amt = input({ type: 'number', inputmode: 'decimal', value: presets[0][1], step: '1' });
+  const amt = input({ type: 'number', inputmode: 'decimal',
+    value: start > 0 ? start : presets[0][1], step: '1' });
   const out = el('div', { class: 'info' });
 
   const refresh = () => {
     const g = parseNum(amt.value);
     const m = scaleFood(food, g);
     out.replaceChildren(
-      el('div', { style: 'font-size:19px;font-weight:700;color:var(--tx);margin-bottom:6px' },
+      el('div', { style: 'font-size:var(--t-2xl);font-weight:700;color:var(--tx);margin-bottom:6px' },
         `${num(Math.round(m.kcal))} ${t('kcal')}`),
       el('div', {}, `${t('protein')} ${num(round(m.protein, 1), 1)}g · ${t('carbs')} ${num(round(m.carbs, 1), 1)}g · ${t('fat')} ${num(round(m.fat, 1), 1)}g · ${t('fiber')} ${num(round(m.fiber, 1), 1)}g`),
     );
@@ -349,24 +444,47 @@ function openPortion(food, meal) {
     .forEach(g => quick.append(el('button', { class: 'chip', onclick: () => { amt.value = g; refresh(); } },
       `${num(g)} ${unit}`)));
 
+  /* Iranian kitchen measures — the units recipes are actually spoken in.
+     The grams are the common kitchen averages (پیمانه‌ی آشپزی ~۲۰۰g), so
+     each chip says its gram value openly and stays an estimate, never a
+     promise. Solid foods only; drinks already have the glass. */
+  if (!liq) {
+    const IR = [
+      ['🥣', t('cup'), 200],
+      ['🥛', t('irGlass'), 250],
+      ['🥄', t('tbsp'), 18],
+      ['🍽️', t('tsp'), 6],
+    ];
+    IR.forEach(([ic, label, g]) => quick.append(el('button', {
+      class: 'chip ir-chip', onclick: () => { amt.value = g; refresh(); buzz(15); }
+    }, `${ic} ${label} ≈ ${num(g)}${t('gram')}`)));
+  }
+
   const mealSel = select(MEAL_KEYS.map(m => ({ value: m, label: t(m) })), meal);
   refresh();
 
   const body = el('div', {},
+    /* Found by typing a product name: say plainly that this is a reference
+       figure for that kind of food, and offer the only thing that makes it
+       exact — what is printed on the packet in the person's hand. */
     recipeBlock(food, mealSel),
     field(`${t('amount')} (${unit})${liq ? ' · ' + t('cc') : ''}`, amt),
     quick, out,
     field(t('addTo'), mealSel),
-    el('button', { class: 'btn full', onclick: async () => {
+    el('button', { class: 'btn full', onclick: async (ev) => {
       const g = parseNum(amt.value);
       if (g <= 0) return toast(t('error'), 'err');
       const m = scaleFood(food, g);
+      /* measured before closeSheet takes the button off the screen */
+      const from = ev.currentTarget.getBoundingClientRect();
+      const toMeal = mealSel.value;
       await addLog({
-        date: S.date, meal: mealSel.value, name: food.name, nameFa: food.nameFa,
+        date: S.date, meal: toMeal, name: food.name, nameFa: food.nameFa,
         grams: g, foodId: food.id, liquid: liq,
         source: food.builtin ? 'db' : 'custom', ...m,
       });
       closeSheet(); toast(t('done'), 'ok'); buzz(); refreshAll();
+      showLogLanding(from, m.kcal, toMeal);
     } }, t('add')),
   );
   sheet(pick(food), body);
@@ -396,16 +514,19 @@ function recipeBlock(food, mealSel) {
       el('b', {}, '🧾 ' + t('recipeOf')),
       el('span', {}, `${num(rows.length)} ${getLang() === 'fa' ? 'جزء' : 'parts'} · ${num(total)} ${t('kcal')}`)),
     el('div', { class: 'recipe-body' },
-      el('div', { class: 'muted', style: 'font-size:11.5px;line-height:1.8;margin-bottom:10px' },
+      el('div', { class: 'muted', style: 'font-size:var(--t-sm);line-height:1.8;margin-bottom:10px' },
         t('derivedNote')),
       ...rows.map(r => el('div', { class: 'recipe-row' },
         el('span', {}, r.name),
         el('i', {}, `${num(r.g)}g`),
         el('b', {}, num(kcalOf(r))))),
-      el('button', { class: 'btn ghost full', style: 'margin-top:12px', onclick: async () => {
+      el('button', { class: 'btn ghost full', style: 'margin-top:12px', onclick: async (ev) => {
+        const from = ev.currentTarget.getBoundingClientRect();
+        let landed = 0;
         for (const r of rows) {
           if (!r.src.kcal && !r.src.p && !r.src.c && !r.src.f) continue;   // water etc.
           const k = r.g / 100;
+          landed += r.src.kcal * k;
           await addLog({
             date: S.date, meal: mealSel.value,
             name: r.src.en || r.name, nameFa: r.src.fa || r.name, grams: r.g,
@@ -415,8 +536,9 @@ function recipeBlock(food, mealSel) {
           });
         }
         closeSheet(); toast(t('partsAdded'), 'ok'); buzz(); refreshAll();
+        showLogLanding(from, landed, mealSel.value);
       } }, t('logParts')),
-      el('div', { class: 'muted', style: 'font-size:11px;margin-top:8px;line-height:1.7' },
+      el('div', { class: 'muted', style: 'font-size:var(--t-xs);margin-top:8px;line-height:1.7' },
         t('logPartsHint'))),
   );
 }
@@ -479,7 +601,8 @@ export function openCreateFood(meal = null, existing = null) {
       if (meal) openPortion(rec, meal); else refreshAll();
     } }, t('save')),
   );
-  sheet(existing ? t('edit') : t('createFood'), body);
+  /* Prefilling a name is not editing: only a record that already exists is. */
+  sheet(existing?.id ? t('edit') : t('createFood'), body);
 }
 
 /* ---------------- describe-in-words estimate ---------------- */
@@ -602,7 +725,7 @@ function showAIResults(res, meal, blob, originalFile = null) {
           el('span', {}, `/ ${num(goal)}`))),
       el('div', { class: 'live-side' },
         el('div', { class: 'live-add' }, `+${num(k)} ${t('kcal')}`),
-        el('div', { class: 'muted', style: 'font-size:11.5px' }, t('projected')),
+        el('div', { class: 'muted', style: 'font-size:var(--t-sm)' }, t('projected')),
         el('div', { class: 'live-macros' },
           el('span', { style: 'color:var(--blue)' }, `P ${num(p, p % 1 ? 1 : 0)}`),
           el('span', { style: 'color:var(--orange)' }, `C ${num(c, c % 1 ? 1 : 0)}`),
@@ -615,7 +738,7 @@ function showAIResults(res, meal, blob, originalFile = null) {
 
   rows.forEach((r, i) => {
     const gEl = input({ type: 'number', inputmode: 'decimal', value: r.grams, step: '5',
-      style: 'padding:7px;font-size:13px;text-align:center' });
+      style: 'padding:7px;font-size:var(--t-md);text-align:center' });
     const per = r.grams ? { k: r.kcal / r.grams, p: r.protein / r.grams, c: r.carbs / r.grams, f: r.fat / r.grams, fb: r.fiber / r.grams } : null;
     const macEl = el('div', { class: 'mac' });
     const drawMac = () => macEl.replaceChildren(
@@ -635,14 +758,38 @@ function showAIResults(res, meal, blob, originalFile = null) {
     const chk = el('input', { type: 'checkbox', checked: true, style: 'width:19px;height:19px;accent-color:var(--acc)' });
     chk.onchange = () => { r.on = chk.checked; card.style.opacity = chk.checked ? '1' : '.45'; recompute(); };
     drawMac();
+
+    /* Keep this dish so it never has to be scanned again. Stored per 100 g,
+       scaled from the portion that was estimated, so it behaves like any other
+       food afterwards. */
+    const keep = el('button', { class: 'btn sm ghost', style: 'padding:6px 10px;font-size:var(--t-sm)',
+      onclick: async () => {
+        const g = parseNum(gEl.value) || r.grams || 100;
+        if (g <= 0) return toast(t('error'), 'err');
+        const per100 = (v) => round(((v || 0) / g) * 100, 1);
+        await db.put('foods', {
+          id: db.uid('cf_'),
+          name: r.name || r.nameFa, nameFa: r.nameFa || r.name,
+          cat: 'iranian',
+          kcal: Math.round(per100(r.kcal)), p: per100(r.protein), c: per100(r.carbs),
+          f: per100(r.fat), fib: per100(r.fiber),
+          servings: [[t('asScanned'), Math.round(g)]],
+          builtin: false, source: 'ai',
+        });
+        keep.disabled = true;
+        keep.textContent = t('savedToMyFoods');
+        toast(t('savedToMyFoods'), 'ok');
+      } }, t('saveToMyFoods'));
+
     const card = el('div', { class: 'ai-item' },
       el('div', { class: 'top' }, chk, el('b', {}, pick(r)), confChip(r.confidence),
         /* say so when the app overruled the model's own calorie figure */
         r.adjusted ? el('span', { class: 'conf low', title: t('kcalFixedWhy') }, t('kcalFixed')) : null),
       el('div', { style: 'display:flex;align-items:center;gap:9px' },
         el('div', { style: 'width:74px' }, gEl),
-        el('span', { class: 'muted', style: 'font-size:11.5px' }, t('gram')),
+        el('span', { class: 'muted', style: 'font-size:var(--t-sm)' }, t('gram')),
         el('div', { style: 'flex:1' }, macEl)),
+      el('div', { style: 'margin-top:8px' }, keep),
     );
     list.append(card);
   });
@@ -670,7 +817,10 @@ function showAIResults(res, meal, blob, originalFile = null) {
           await handlePhoto(originalFile, mealSel.value, h);
         } }, t('reanalyze')))),
     lastMealToggle(isLast),
-    el('button', { class: 'btn full', onclick: async () => {
+    el('button', { class: 'btn full', onclick: async (ev) => {
+      /* currentTarget is only live during dispatch - after the first await it
+         is null, so the button is measured before anything else happens */
+      const from = ev.currentTarget.getBoundingClientRect();
       const act = rows.filter(r => r.on);
       if (!act.length) return closeSheet();
       let photoId = null;
@@ -678,7 +828,9 @@ function showAIResults(res, meal, blob, originalFile = null) {
         photoId = db.uid('ph_');
         await db.put('photos', { id: photoId, blob, at: Date.now() });
       }
+      let landed = 0;
       for (const r of act) {
+        landed += r.kcal || 0;
         await addLog({
           date: S.date, meal: mealSel.value,
           name: r.name, nameFa: r.nameFa, grams: r.grams,
@@ -687,16 +839,17 @@ function showAIResults(res, meal, blob, originalFile = null) {
         });
       }
       closeSheet(); buzz(); refreshAll();
+      showLogLanding(from, landed, mealSel.value);
       if (isLast.on) {
         const rep = await closeDay(S.date);
-        toast(`✅ ${t('dayClosed')}`, 'ok');
+        toast(t('dayClosed'), 'ok');
         refreshAll();
         setTimeout(() => reportSheet(rep), 260);
       } else {
         toast(t('done'), 'ok');
       }
     } }, t('addAll')),
-    el('div', { class: 'muted', style: 'text-align:center;font-size:11.5px;margin-top:12px;line-height:1.7' }, t('disclaimer')),
+    el('div', { class: 'muted', style: 'text-align:center;font-size:var(--t-sm);margin-top:12px;line-height:1.7' }, t('disclaimer')),
   );
   sheet(t('aiResult'), body);
 }
@@ -726,20 +879,26 @@ export async function closeDayFlow(date = S.date) {
   const existing = await getReport(date);
   if (existing) { reportSheet(existing); return; }
   const rep = await closeDay(date);
-  toast(`✅ ${t('dayClosed')}`, 'ok');
+  toast(t('dayClosed'), 'ok');
   refreshAll();
   setTimeout(() => reportSheet(rep), 200);
 }
 
 /* ---------------- my foods manager ---------------- */
 
-export async function openMyFoods() {
+export async function openMyFoods(meal = null) {
   const foods = await db.all('foods');
   const list = el('div', { class: 'list' });
-  if (!foods.length) list.append(el('div', { class: 'empty' }, t('empty')));
+  if (!foods.length) {
+    list.append(emptyArt('plate', t('noMyFoodsTitle'), t('noMyFoods'), 'var(--orange)', {
+      label: t('createFood'), onClick: () => { closeSheet(); openCreateFood(meal); },
+    }));
+  }
   foods.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  /* Reached while adding a meal, tapping a food should log it; reached from the
+     menu, there is nothing to log it to, so it opens for editing instead. */
   foods.forEach(f => list.append(el('div', { class: 'li' },
-    el('div', { class: 'li-main', onclick: () => { closeSheet(); openCreateFood(null, f); } },
+    el('div', { class: 'li-main', onclick: () => { closeSheet(); meal ? openPortion(f, meal) : openCreateFood(null, f); } },
       el('b', {}, pick(f)),
       el('span', {}, `${num(f.kcal)} ${t('kcal')} / 100${t('gram')}`)),
     el('button', { class: 'swipe-del', onclick: async (e) => {
@@ -748,7 +907,13 @@ export async function openMyFoods() {
     } }, t('delete')),
   )));
   sheet(t('myFoods'), el('div', {},
-    el('button', { class: 'btn full', style: 'margin-bottom:14px', onclick: () => { closeSheet(); openCreateFood(); } }, '+ ' + t('createFood')),
+    el('button', { class: 'btn full', style: 'margin-bottom:10px', onclick: () => { closeSheet(); openCreateFood(meal); } }, '+ ' + t('createFood')),
+    /* Barcodes you have taught the app are the same idea as foods you made -
+       your own products - so they live together rather than in the main menu. */
+    el('button', { class: 'btn ghost full', style: 'margin-bottom:14px', onclick: async () => {
+      closeSheet();
+      const bc = await import('./barcode.js'); bc.openMyBarcodes();
+    } }, lineIcon('tag', { size: 16 }), t('myBarcodes')),
     list));
 }
 

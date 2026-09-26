@@ -1,5 +1,6 @@
 /* ============ Gym tools: plate calculator, progress photos ============ */
 import * as db from './db.js';
+import { lineIcon } from './icons.js';
 import { S, kgToDisp, dispToKg, wUnit, isImperial } from './store.js';
 import { t, num, getLang } from './i18n.js';
 import {
@@ -7,7 +8,8 @@ import {
   round, parseNum, todayKey, longDate, shortDate, buzz,
 } from './ui.js';
 import { shrinkImage } from './ai.js';
-import { emptyArt } from './art.js';
+import { emptyArt, svgNode, svgRoot } from './art.js';
+import { endBarbell } from './art3d.js';
 
 /* ============================================================
    PLATE CALCULATOR
@@ -58,13 +60,27 @@ export function openPlateCalc(prefillKg = null) {
     }
     const r = solvePlates(target, bar, plates);
 
-    out.append(el('div', { class: 'plate-bar' },
-      el('div', { class: 'pb-sleeve' }),
-      ...r.used.map(p => el('div', {
-        class: 'pb-plate',
-        style: `--pc:${PLATE_COLOR[p] || '#6b7684'};height:${clampH(p, plates)}%`,
-      }, el('span', {}, String(p)))),
-      el('div', { class: 'pb-collar' }),
+    /* The bar in perspective: each plate an ellipse seen at a slight angle,
+       lit like the real rubber, sleeves receding to the hub. The side view
+       told you the sizes; this tells you the shape. */
+    const maxP = plates[0];
+    out.append(el('div', { class: 'bar3d-wrap' },
+      el('div', { class: 'bar3d' },
+        /* the sleeve, running to the far edge */
+        el('i', { class: 'b3-sleeve' }),
+        ...r.used.map((p, i) => {
+          const t = p / maxP;
+          const dia = 34 + t * 62;                       // % of the rail height
+          return el('div', {
+            class: 'b3-plate',
+            style: `--pc:${PLATE_COLOR[p] || '#6b7684'};--dia:${dia}%;--ix:${i}`,
+          }, el('span', {}, num(p)));
+        }),
+        el('i', { class: 'b3-collar' }),
+        el('i', { class: 'b3-knob' }),
+      ),
+      /* the same load seen end-on — the view you actually lift */
+      endBarbell(r.used.map(p => ({ w: p, color: PLATE_COLOR[p] || '#6b7684' }))),
     ));
 
     out.append(el('div', { class: 'kv' },
@@ -94,20 +110,17 @@ export function openPlateCalc(prefillKg = null) {
     quick,
     field(`${t('barWeight')} (${wUnit()})`, barIn),
     out,
-    el('div', { class: 'muted', style: 'font-size:11.5px;margin-top:14px;line-height:1.8' },
+    el('div', { class: 'muted', style: 'font-size:var(--t-sm);margin-top:14px;line-height:1.8' },
       getLang() === 'fa'
         ? `صفحه‌های فرض‌شده: ${plates.map(p => num(p)).join('، ')} — از سنگین به سبک چیده می‌شوند.`
         : `Assumed plates: ${plates.join(', ')} — loaded heaviest first.`),
   ));
 }
-function clampH(p, plates) {
-  const max = plates[0];
-  return 45 + (p / max) * 55;
-}
 
 /* ============================================================
    PROGRESS PHOTOS
    ============================================================ */
+
 
 export async function allPhotos() {
   const ps = await db.all('bodyPhotos');
@@ -161,7 +174,8 @@ export async function renderPhotoStrip(host) {
 
   if (!ps.length) {
     host.append(emptyArt('scale', t('noPhotos'), t('photoHint'), 'var(--teal)'));
-    host.append(el('button', { class: 'btn ghost full', onclick: pickPhoto }, '📷 ' + t('addPhoto')));
+    host.append(el('button', { class: 'btn ghost full', onclick: pickPhoto },
+    lineIcon('camera', { size: 17 }), t('addPhoto')));
     return;
   }
 
@@ -175,8 +189,16 @@ export async function renderPhotoStrip(host) {
   });
   host.append(strip);
   host.append(el('div', { class: 'btn-row' },
-    el('button', { class: 'btn ghost', onclick: pickPhoto }, '📷 ' + t('addPhoto')),
-    ps.length >= 2 ? el('button', { class: 'btn ghost', onclick: () => openCompare(ps) }, '⇄ ' + t('comparePhotos')) : null));
+    el('button', { class: 'btn ghost', onclick: pickPhoto },
+      lineIcon('camera', { size: 17 }), t('addPhoto')),
+    ps.length >= 2 ? el('button', { class: 'btn ghost', onclick: () => openCompare(ps) },
+      lineIcon('swap', { size: 17 }), t('comparePhotos')) : null));
+}
+
+/** Open one photo by id, for callers that hold an id rather than the record. */
+export async function openPhotoById(id) {
+  const p = await db.get('bodyPhotos', id);
+  if (p) openPhoto(p);
 }
 
 function openPhoto(p) {
@@ -197,20 +219,97 @@ function openPhoto(p) {
   ));
 }
 
+/**
+ * Two photos in one box with a line you can drag between them.
+ *
+ * The same frame, the same size, the same crop: across the line the only
+ * thing that changes is the body. Side by side cannot do that, because the
+ * eye has to travel between two differently framed pictures and guess.
+ */
+function wipe(before, after, { flip = false }) {
+  const box = el('div', { class: 'wipe', role: 'slider', tabindex: '0',
+    'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '50',
+    'aria-label': `${t('before')} / ${t('after')}` });
+
+  /* Whichever photo sits on the physical left is the clipped one; the other
+     fills the box behind it. Keeping this in physical terms is deliberate —
+     the finger moves in pixels, not in logical directions. */
+  const left = flip ? after : before;
+  const right = flip ? before : after;
+
+  const under = el('img', { src: URL.createObjectURL(right.blob), alt: '' });
+  const over = el('img', { class: 'top', src: URL.createObjectURL(left.blob), alt: '' });
+  const bar = el('i', { class: 'wipe-bar' });
+  const grip = el('i', { class: 'wipe-grip' },
+    svgRoot('0 0 24 24', { width: 16, height: 16 },
+      svgNode('path', { d: 'M10 8 6 12l4 4M14 8l4 4-4 4', fill: 'none',
+        stroke: 'currentColor', 'stroke-width': 2,
+        'stroke-linecap': 'round', 'stroke-linejoin': 'round' })));
+
+  let pct = 50;
+  const apply = () => {
+    box.style.setProperty('--pos', pct + '%');
+    box.style.setProperty('--cut', (100 - pct) + '%');
+    box.setAttribute('aria-valuenow', String(Math.round(pct)));
+  };
+  const at = (clientX) => {
+    const r = box.getBoundingClientRect();
+    if (!r.width) return;
+    pct = Math.min(100, Math.max(0, (clientX - r.left) / r.width * 100));
+    apply();
+  };
+
+  let dragging = false;
+  box.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    box.setPointerCapture?.(e.pointerId);
+    at(e.clientX);
+  });
+  box.addEventListener('pointermove', (e) => { if (dragging) at(e.clientX); });
+  const stop = () => { dragging = false; };
+  box.addEventListener('pointerup', stop);
+  box.addEventListener('pointercancel', stop);
+  /* Arrow keys nudge it, so the comparison is not lost to anyone who cannot
+     drag. Left is left on screen, whatever the script direction. */
+  box.addEventListener('keydown', (e) => {
+    const step = e.shiftKey ? 10 : 2;
+    if (e.key === 'ArrowLeft') pct = Math.max(0, pct - step);
+    else if (e.key === 'ArrowRight') pct = Math.min(100, pct + step);
+    else if (e.key === 'Home') pct = 0;
+    else if (e.key === 'End') pct = 100;
+    else return;
+    e.preventDefault();
+    apply();
+  });
+
+  box.append(under, over, bar, grip,
+    el('span', { class: 'wipe-tag l' }, flip ? t('after') : t('before')),
+    el('span', { class: 'wipe-tag r' }, flip ? t('before') : t('after')));
+  apply();
+  return box;
+}
+
 function openCompare(ps) {
   let a = ps[ps.length - 1], b = ps[0];        // oldest vs newest by default
+  let mode = 'wipe';
   const host = el('div', {});
 
   const draw = () => {
     host.replaceChildren(
-      el('div', { class: 'cmp' },
-        cmpSide(a, t('before')),
-        cmpSide(b, t('after'))),
+      el('div', { class: 'seg tight' },
+        ...[['wipe', t('overlay')], ['side', t('sideBySide')]].map(([id, label]) =>
+          el('button', { class: 'seg-btn' + (mode === id ? ' active' : ''),
+            onclick: () => { if (mode !== id) { mode = id; draw(); } } }, label))),
+      mode === 'wipe'
+        ? wipe(a, b, { flip: getLang() === 'fa' })
+        : el('div', { class: 'cmp' },
+            cmpSide(a, t('before')),
+            cmpSide(b, t('after'))),
       a.kg && b.kg ? el('div', { class: 'kv', style: 'margin-top:12px' },
         el('span', {}, t('change')),
         el('b', { style: `color:${b.kg - a.kg <= 0 ? 'var(--acc)' : 'var(--blue)'}` },
           `${b.kg - a.kg > 0 ? '+' : ''}${num(round(kgToDisp(b.kg - a.kg), 1), 1)} ${wUnit()}`)) : null,
-      el('div', { class: 'muted', style: 'margin:14px 0 8px;font-size:12px' }, t('pickTwo')),
+      el('div', { class: 'muted', style: 'margin:14px 0 8px;font-size:var(--t-sm)' }, t('pickTwo')),
       el('div', { class: 'photo-strip small' },
         ...ps.map(p => el('button', {
           class: 'photo-cell' + (p === a ? ' pick-a' : p === b ? ' pick-b' : ''),

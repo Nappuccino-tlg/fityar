@@ -6,7 +6,8 @@ import { PROXY_URL, PROXY_MODEL } from './config.js';
 export const DEFAULTS = {
   settings: {
     lang: 'fa',
-    theme: 'dark',
+    theme: 'light',
+    iconStyle: 'tile',
     units: 'metric',          // metric | imperial
     restDefault: 90,          // seconds
     fx: true,                 // sound + vibration
@@ -16,6 +17,10 @@ export const DEFAULTS = {
     model: 'gemini-2.5-flash',
     baseUrl: '',              // only used when provider === 'openai'
     keepPhotos: true,
+    /* Contribute barcode readings to the shared pool. On by default: the pool
+       only exists because people add to it, and what travels is a barcode and
+       the numbers on a packet, never anything about the person. */
+    shareBarcodes: true,
   },
   profile: {
     name: '',
@@ -75,6 +80,7 @@ export async function load() {
     S.profile.weight = ws[0].kg;
   }
   if (S.goals.auto) applyAutoGoals(false);
+  Object.assign(S.goals, repairGoals(S.goals));   // legacy stored goals must fit the calorie budget
   return S;
 }
 
@@ -129,6 +135,22 @@ export function proteinBasisKg(p = S.profile) {
 }
 
 /** Fibre target: the DRI is 14 g per 1000 kcal, floored and capped sensibly. */
+/** Macros must fit inside the calorie goal. Legacy stored goals (or an AI
+ *  setting them) can overshoot the 35% protein cap, which used to leave the
+ *  daily card showing numbers that added up to far more than the calorie
+ *  target. Trim protein/fat to their per-kg ceilings and give the rest to
+ *  carbs so the three macros add up to the day. */
+export function repairGoals(g = S.goals, p = S.profile) {
+  const kcal = g.kcal || 2200;
+  const kg = p.weight || 75;
+  const capP = Math.round(Math.min(kg * 2.2, kcal * 0.35 / 4));
+  const capF = Math.round(Math.max(kg * 0.8, kcal * 0.20 / 9));
+  const protein = Math.max(60, Math.min(g.protein || 0, capP));
+  const fat = Math.max(40, Math.min(g.fat || 0, capF));
+  const carbs = Math.max(50, Math.round((kcal - protein * 4 - fat * 9) / 4));
+  return { ...g, kcal, protein, carbs, fat };
+}
+
 export const fiberGoal = (kcal = S.goals.kcal) => clamp(round(kcal / 1000 * 14), 20, 50);
 
 /** Suggested daily targets from profile. */
@@ -151,7 +173,7 @@ export function suggestGoals(p = S.profile) {
 }
 
 export function applyAutoGoals(persist = true) {
-  const g = suggestGoals();
+  const g = repairGoals(suggestGoals());
   Object.assign(S.goals, g, { auto: true });
   if (persist) return saveGoals();
 }
@@ -201,7 +223,6 @@ export function workoutKcal(workout) {
 
 /* ---------- helpers used across screens ---------- */
 export const MEAL_KEYS = ['breakfast', 'lunch', 'dinner', 'snack'];
-export const MEAL_ICON = { breakfast: '🌅', lunch: '🍽️', dinner: '🌙', snack: '🍎' };
 
 /** Split of a day's calorie goal across meals (used for suggestions). */
 export const MEAL_SPLIT = { breakfast: 0.25, lunch: 0.35, dinner: 0.30, snack: 0.10 };

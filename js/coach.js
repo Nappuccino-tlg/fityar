@@ -3,6 +3,7 @@
    logging streak, and the week review. All computed locally.
 ============================================================== */
 import * as db from './db.js';
+import { icon, GLYPHS, lineIcon } from './icons.js';
 import { S, kgToDisp, dispToKg, wUnit, e1rm } from './store.js';
 import { t, num, pick, getLang, countLabel } from './i18n.js';
 import {
@@ -11,7 +12,15 @@ import {
 } from './ui.js';
 import { getRoutines, allWorkouts, lastSetsFor, exById, exName, startWorkout } from './workouts.js';
 import { logsFor, totals } from './nutrition.js';
-import { emptyArt } from './art.js';
+import { emptyArt, bodyMap } from './art.js';
+import { muscleStats, heatFrom, HEAT_MODES } from './muscles.js';
+import { body3d } from './body3d.js';
+
+/* The week review keeps whatever body the user last looked at — the same
+   preference the exercise tab stores, but one module cannot read another's
+   private let, so each keeps its own and they simply agree by taste. */
+let weekBodyView = '3d';
+import { openMuscleSheet } from './workouts.js';
 
 /* ============================================================
    WEEKLY SCHEDULE
@@ -99,7 +108,7 @@ export function openScheduleEditor() {
       host.append(el('button', { class: 'btn ghost full', style: 'margin-top:12px', onclick: () => {
         sc = autoArrange(routines.map(r => r.id), S.settings.firstDay ?? 6);
         draw();
-      } }, '🎲 ' + t('autoAssign')));
+      } }, lineIcon('dice', { size: 16 }), t('autoAssign')));
       host.append(el('button', { class: 'btn full', style: 'margin-top:9px', onclick: async () => {
         await setSchedule(sc);
         closeSheet(); toast(t('saved'), 'ok');
@@ -133,15 +142,17 @@ export async function todayCard() {
   const routine = await routineForDate();
   const done = await workedOut();
 
-  const card = (kind, icon, title, sub, action) =>
+  /* `mark` is a glyph name; anything not in the set falls through as text,
+     which is how the few remaining emoji still render. */
+  const card = (kind, mark, title, sub, action) =>
     el('div', { class: 'card today-card ' + kind },
-      el('span', { class: 'tdc-ico' }, icon),
+      el('span', { class: 'tdc-ico' }, GLYPHS.has(mark) ? icon(mark, { size: 22, cls: 'ic-lift' }) : mark),
       el('div', { class: 'tdc-txt' }, el('b', {}, title), el('span', {}, sub)),
       action);
 
   /* 1 — nothing has been built yet: say that, do not call it a rest day */
   if (!routines.length) {
-    return card('new', '🎯',
+    return card('new', 'target',
       fa ? 'هنوز برنامه‌ای نداری' : 'No program yet',
       fa ? 'چند سؤال، بعد برنامه‌ات آماده است' : 'A few questions and it is ready',
       el('button', { class: 'btn sm', onclick: () => window.dispatchEvent(new CustomEvent('open-wizard')) },
@@ -163,13 +174,13 @@ export async function todayCard() {
 
   /* 3 — already trained today */
   if (done) {
-    return card('done', '✅',
+    return card('done', 'check',
       fa ? 'تمرین امروز انجام شد' : "Today's workout is done", progressLine, null);
   }
 
   /* 4 — today has a session waiting */
   if (routine) {
-    return card('go', '🔥',
+    return card('go', 'flame',
       `${t('todayWorkout')}: ${routine.name}`,
       `${countLabel(routine.ex.length, 'exercise')} · ${progressLine}`,
       el('button', { class: 'btn sm', onclick: () => startWorkout({ ...routine, routineId: routine.id }) },
@@ -275,15 +286,15 @@ export async function overloadFor(exId, targetReps) {
    ============================================================ */
 
 /** Consecutive days (ending today or yesterday) with any food logged. */
-export async function streak() {
-  const logs = await db.all('foodLogs');
-  if (!logs.length) return { current: 0, best: 0 };
-  const days = new Set(logs.map(l => l.date));
+/** Current and best run of consecutive days present in a set of date keys. */
+function dayRun(days) {
+  if (!days.size) return { current: 0, best: 0 };
 
+  /* Today not being logged yet does not break a streak - the day is not over. */
   const tk = todayKey();
-  let cur = 0;
+  let current = 0;
   let cursor = days.has(tk) ? tk : addDays(tk, -1);
-  while (days.has(cursor)) { cur++; cursor = addDays(cursor, -1); }
+  while (days.has(cursor)) { current++; cursor = addDays(cursor, -1); }
 
   const sorted = [...days].sort();
   let best = 0, run = 0, prev = null;
@@ -292,7 +303,57 @@ export async function streak() {
     if (run > best) best = run;
     prev = d;
   }
-  return { current: cur, best };
+  return { current, best };
+}
+
+/**
+ * The same, counted in weeks: a week counts if anything happened in it.
+ *
+ * This is the right unit for training. A daily streak punishes the thing it
+ * should reward — rest days are part of a programme, and a number that falls
+ * to zero every time someone takes the rest day they were told to take is
+ * worse than no number at all.
+ */
+function weekRun(days) {
+  if (!days.size) return { current: 0, best: 0 };
+  const firstDay = S.settings.firstDay ?? 6;
+  const weekOf = (key) => {
+    const d = keyToDate(key);
+    d.setDate(d.getDate() - ((d.getDay() - firstDay + 7) % 7));
+    return dateKey(d);
+  };
+
+  const weeks = new Set([...days].map(weekOf));
+  const thisWeek = weekOf(todayKey());
+
+  /* The current week is not over either, so an empty one does not end it. */
+  let current = 0;
+  let cursor = weeks.has(thisWeek) ? thisWeek : addDays(thisWeek, -7);
+  while (weeks.has(cursor)) { current++; cursor = addDays(cursor, -7); }
+
+  const sorted = [...weeks].sort();
+  let best = 0, run = 0, prev = null;
+  for (const w of sorted) {
+    run = (prev && daysBetween(prev, w) === 7) ? run + 1 : 1;
+    if (run > best) best = run;
+    prev = w;
+  }
+  return { current, best };
+}
+
+/**
+ * Two streaks, because they are two different habits.
+ *
+ * One number for both said a month of training with nothing logged was a
+ * streak of zero, and a month of logging with no training was a full month.
+ * Neither reading was true of the person it was shown to.
+ */
+export async function streaks() {
+  const [logs, workouts] = await Promise.all([db.all('foodLogs'), db.all('workouts')]);
+  return {
+    nutrition: dayRun(new Set(logs.map(l => l.date).filter(Boolean))),
+    training: weekRun(new Set(workouts.map(w => w.date).filter(Boolean))),
+  };
 }
 
 /* ============================================================
@@ -328,17 +389,30 @@ export async function weekSummary(offset = 0) {
     avgKcal: Math.round(sum(agg, x => x.kcal) / n),
     avgProtein: round(sum(agg, x => x.protein) / n, 1),
     workouts: ws.length,
+    /* the sessions themselves, so the card can show which muscles they went to */
+    sessions: ws,
     volume: Math.round(sum(ws, w => w.volume || 0)),
     minutes: Math.round(sum(ws, w => ((w.end || w.start) - w.start) / 60000)),
     adherence: daysLogged ? Math.round(inRange / daysLogged * 100) : 0,
   };
 }
 
+/** One streak: what it counts, how long it is now, and the best it has been. */
+function streakRow(glyph, run, label, unit, tone) {
+  return el('div', { class: 'streak-row' },
+    el('span', { class: 'streak-ico', style: `--sc:${tone}` },
+      run.current >= 3 ? icon(glyph, { size: 19, cls: 'ic-lift' }) : icon(glyph, { size: 19 })),
+    el('div', { style: 'flex:1' },
+      el('b', {}, `${num(run.current)} ${unit}`),
+      el('span', { class: 'muted', style: 'display:block;font-size:var(--t-xs)' },
+        `${label} · ${t('streakBest')}: ${num(run.best)}`)));
+}
+
 export async function weekReviewCard() {
   const cur = await weekSummary(0);
   const prev = await weekSummary(1);
   const fa = getLang() === 'fa';
-  const st = await streak();
+  const st = await streaks();
 
   const delta = (a, b, unit = '') => {
     if (!b) return null;
@@ -352,29 +426,109 @@ export async function weekReviewCard() {
   return el('div', { class: 'card week-card' },
     el('div', { class: 'card-head' },
       el('h3', {}, t('weekReview')),
-      el('span', { class: 'muted', style: 'font-size:11px' }, `${shortDate(cur.a)} — ${shortDate(cur.b)}`)),
+      el('span', { class: 'muted', style: 'font-size:var(--t-xs)' }, `${shortDate(cur.a)} — ${shortDate(cur.b)}`)),
 
-    el('div', { class: 'streak-row' },
-      el('span', { class: 'streak-ico' }, st.current >= 3 ? '🔥' : '📅'),
-      el('div', { style: 'flex:1' },
-        el('b', {}, `${num(st.current)} ${t('streak')}`),
-        el('span', { class: 'muted', style: 'display:block;font-size:11px' },
-          `${t('streakBest')}: ${num(st.best)}`))),
+    /* Two rows, two habits. The flame only lights once there is something
+       to be pleased about; a flame beside a zero is just noise. */
+    el('div', { class: 'streak-pair' },
+      streakRow('flame', st.nutrition, t('streakLogging'), t('streak'), 'var(--orange)'),
+      streakRow('dumbbell', st.training, t('streakTraining'), t('weeksInARow'), 'var(--blue)')),
+
+    /* What you trained, and what you did not. Six tiles say what you did;
+       none of them says what has been neglected, which is the question a
+       week of training actually raises. */
+    cur.sessions.length ? weekBody(cur.sessions, fa) : null,
 
     el('div', { class: 'wk-grid' },
       wkCell('🍽️', num(cur.daysLogged) + '/۷'.replace('۷', fa ? '۷' : '7'), t('daysLogged'), 'var(--orange)', null),
-      wkCell('🔥', num(cur.avgKcal), t('avgKcal'), 'var(--acc)', delta(cur.avgKcal, prev.avgKcal)),
-      wkCell('🏋️', num(cur.workouts), t('workouts'), 'var(--blue)', delta(cur.workouts, prev.workouts)),
+      wkCell('flame', num(cur.avgKcal), t('avgKcal'), 'var(--acc)', delta(cur.avgKcal, prev.avgKcal)),
+      wkCell('dumbbell', num(cur.workouts), t('workouts'), 'var(--blue)', delta(cur.workouts, prev.workouts)),
       wkCell('📊', num(cur.adherence) + (fa ? '٪' : '%'), t('adherence'), 'var(--purple)', delta(cur.adherence, prev.adherence, fa ? '٪' : '%')),
-      wkCell('🥩', num(cur.avgProtein) + 'g', t('protein'), 'var(--pink)', delta(cur.avgProtein, prev.avgProtein, 'g')),
+      wkCell('meat', num(cur.avgProtein) + 'g', t('protein'), 'var(--pink)', delta(cur.avgProtein, prev.avgProtein, 'g')),
       wkCell('⏱️', num(cur.minutes), t('min'), 'var(--teal)', delta(cur.minutes, prev.minutes)),
     ),
   );
 }
 
-function wkCell(icon, value, label, color, deltaNode) {
+/**
+ * The week's training as a body, shaded by how many sets each muscle got.
+ *
+ * Six tiles of numbers say what you did; none of them says what has been
+ * neglected, which is the question a week of training actually raises.
+ */
+function weekBody(sessions, fa) {
+  const index = {};
+  for (const w of sessions) {
+    for (const x of w.exercises || []) {
+      const e = exById(x.exId);
+      if (e) index[x.exId] = e;
+    }
+  }
+  const stats = muscleStats(sessions, index);
+  const wrap = el('div', { class: 'wk-body' });
+  const figure = el('div');
+
+  /* The body can be flat (both views at once) or the turning figure. The
+     figure is remembered for the session, the same preference the exercise
+     tab keeps — one taste, applied everywhere the body appears. */
+  let view = weekBodyView || '3d';
+
+  /* Volume and frequency answer different questions: how much went into a
+     muscle, and how often you went back to it. One huge chest session and
+     three moderate ones are identical under volume and quite different
+     under frequency. */
+  let mode = 'volume';
+  let fig = null;
+  const draw = () => {
+    if (fig?.dispose) fig.dispose();
+    if (view === '3d') {
+      fig = body3d({ heat: heatFrom(stats, mode), onPick: (m) => openMuscleSheet(m), scale: 0.86 });
+      fig.node.append(el('div', { class: 'b3d-hint' }, t('turnHint')));
+      figure.replaceChildren(fig.node);
+    } else {
+      fig = null;
+      figure.replaceChildren(bodyMap({
+        heat: heatFrom(stats, mode),
+        onPick: (m) => openMuscleSheet(m),
+      }));
+    }
+  };
+
+  const viewSeg = el('div', { class: 'body-view seg tight' },
+    ...[['3d', t('view3d')], ['flat', t('viewFlat')]].map(([id, label]) =>
+      el('button', {
+        class: 'seg-btn' + (view === id ? ' active' : ''),
+        onclick: () => {
+          if (view === id) return;
+          view = weekBodyView = id;
+          [...viewSeg.children].forEach((c) => c.classList.toggle('active', c.dataset.v === id));
+          draw();
+        },
+        dataset: { v: id },
+      }, label)));
+
+  const modes = el('div', { class: 'wk-modes' },
+    ...HEAT_MODES.map((x) => {
+      const b = el('button', {
+        class: 'chip' + (x.id === mode ? ' on' : ''),
+        onclick: () => {
+          mode = x.id;
+          [...modes.children].forEach((c) => c.classList.toggle('on', c === b));
+          fig ? fig.setHeat(heatFrom(stats, mode)) : draw();
+        },
+      }, fa ? x.fa : x.en);
+      return b;
+    }));
+
+  draw();
+  wrap.append(viewSeg, modes, figure, el('span', { class: 'wk-body-cap' },
+    fa ? 'برای جزئیات، روی عضله بزن' : 'Tap a muscle for detail'));
+  return wrap;
+}
+
+function wkCell(mark, value, label, color, deltaNode) {
   return el('div', { class: 'wk-cell', style: `--wc:${color}` },
-    el('span', { class: 'wk-ico' }, icon),
+    el('span', { class: 'wk-ico' }, GLYPHS.has(mark) ? icon(mark, { size: 18, cls: 'ic-lift' }) : mark),
     el('b', {}, value),
     el('span', { class: 'wk-lab' }, label),
     deltaNode);

@@ -1,5 +1,7 @@
 /* ============ End-of-day report: what was over-, under- or un-eaten ============ */
 import * as db from './db.js';
+import { growTo } from './motion.js';
+import { metricIcon, mealIcon, groupIcon, icon, GROUP_GLYPH, lineIcon } from './icons.js';
 import { S, fiberGoal } from './store.js';
 import { t, num, pick, getLang } from './i18n.js';
 import {
@@ -8,7 +10,7 @@ import {
 } from './ui.js';
 import { logsFor, totals, burnedOn, getWater } from './nutrition.js';
 import { kgToDisp, wUnit } from './store.js';
-import { MEAL_KEYS, MEAL_ICON } from './store.js';
+import { MEAL_KEYS } from './store.js';
 import { FOOD_INDEX } from './data-foods.js';
 import { emptyArt } from './art.js';
 
@@ -30,13 +32,13 @@ export const STATUS_LABEL = { over: 'overBudget', under: 'underBudget', ok: 'onT
 /* ---------------- food-group coverage ---------------- */
 
 const GROUPS = [
-  { id: 'veg',     label: 'groupVeg',     cats: ['veg'],                    minG: 200, icon: '🥬' },
-  { id: 'fruit',   label: 'groupFruit',   cats: ['fruit'],                  minG: 150, icon: '🍎' },
-  { id: 'protein', label: 'groupProtein', cats: ['protein', 'supp'],        minG: 150, icon: '🍗' },
-  { id: 'dairy',   label: 'groupDairy',   cats: ['dairy'],                  minG: 150, icon: '🥛' },
-  { id: 'grain',   label: 'groupGrain',   cats: ['grain', 'iranian'],       minG: 150, icon: '🍚' },
-  { id: 'nut',     label: 'groupNut',     cats: ['nut'],                    minG: 15,  icon: '🥜' },
-  { id: 'snack',   label: 'groupSnack',   cats: ['snack'],                  maxG: 60,  icon: '🍫' },
+  { id: 'veg',     label: 'groupVeg',     cats: ['veg'],                    minG: 200 },
+  { id: 'fruit',   label: 'groupFruit',   cats: ['fruit'],                  minG: 150 },
+  { id: 'protein', label: 'groupProtein', cats: ['protein', 'supp'],        minG: 150 },
+  { id: 'dairy',   label: 'groupDairy',   cats: ['dairy'],                  minG: 150 },
+  { id: 'grain',   label: 'groupGrain',   cats: ['grain', 'iranian', 'fastfood'], minG: 150 },
+  { id: 'nut',     label: 'groupNut',     cats: ['nut'],                    minG: 15 },
+  { id: 'snack',   label: 'groupSnack',   cats: ['snack'],                  maxG: 60 },
 ];
 
 /** Grams eaten per food group, using the built-in category of each logged food. */
@@ -88,12 +90,12 @@ export async function buildReport(date) {
   const g = S.goals;
 
   const metrics = [
-    { key: 'kcal',    label: 'kcal',    value: tt.kcal,    target: g.kcal,    unit: '',  icon: '🔥' },
-    { key: 'protein', label: 'protein', value: tt.protein, target: g.protein, unit: 'g', icon: '🥩' },
-    { key: 'carbs',   label: 'carbs',   value: tt.carbs,   target: g.carbs,   unit: 'g', icon: '🍞' },
-    { key: 'fat',     label: 'fat',     value: tt.fat,     target: g.fat,     unit: 'g', icon: '🥑' },
-    { key: 'fiber',   label: 'fiber',   value: tt.fiber,   target: fiberGoal(), unit: 'g', icon: '🌾' },
-    { key: 'water',   label: 'water',   value: water,      target: g.water,   unit: 'ml', icon: '💧' },
+    { key: 'kcal',    label: 'kcal',    value: tt.kcal,    target: g.kcal,    unit: '' },
+    { key: 'protein', label: 'protein', value: tt.protein, target: g.protein, unit: 'g' },
+    { key: 'carbs',   label: 'carbs',   value: tt.carbs,   target: g.carbs,   unit: 'g' },
+    { key: 'fat',     label: 'fat',     value: tt.fat,     target: g.fat,     unit: 'g' },
+    { key: 'fiber',   label: 'fiber',   value: tt.fiber,   target: fiberGoal(), unit: 'g' },
+    { key: 'water',   label: 'water',   value: water,      target: g.water,   unit: 'ml' },
   ].map(m => {
     const st = statusOf(m.value, m.target);
     return { ...m, status: st, diff: round(m.value - m.target, 1), pct: m.target ? round(m.value / m.target * 100) : 0 };
@@ -106,7 +108,7 @@ export async function buildReport(date) {
     if (gr.maxG !== undefined) status = v > gr.maxG ? 'over' : 'ok';
     else if (v <= 0) status = 'missing';
     else if (v < gr.minG) status = 'under';
-    return { id: gr.id, label: gr.label, icon: gr.icon, grams: v, status,
+    return { id: gr.id, label: gr.label, grams: v, status,
              limit: gr.maxG !== undefined ? gr.maxG : gr.minG, isLimit: gr.maxG !== undefined };
   });
 
@@ -132,57 +134,57 @@ function buildAdvice(metrics, groups, logs) {
 
   const over = (m) => Math.abs(m.diff);
   if (M.kcal.status === 'over') {
-    out.push({ kind: 'over', icon: '🔥', text: fa
+    out.push({ kind: 'over', glyph: 'flame', text: fa
       ? `${num(over(M.kcal))} کالری بیشتر از هدف مصرف شد. فردا یا کمی کمتر بخور یا یک جلسه هوازی اضافه کن.`
       : `You ate ${num(over(M.kcal))} kcal over target. Trim a little tomorrow or add a cardio session.` });
   } else if (M.kcal.status === 'under') {
-    out.push({ kind: 'under', icon: '🔥', text: fa
+    out.push({ kind: 'under', glyph: 'flame', text: fa
       ? `${num(over(M.kcal))} کالری کمتر از هدف خوردی. کم‌خوری مداوم جلوی عضله‌سازی و ریکاوری را می‌گیرد.`
       : `You were ${num(over(M.kcal))} kcal under target. Chronic under-eating blocks recovery and muscle gain.` });
   } else {
-    out.push({ kind: 'ok', icon: '✅', text: fa ? 'کالری امروز دقیقاً در محدوده‌ی هدف بود.' : 'Calories landed right on target today.' });
+    out.push({ kind: 'ok', glyph: 'check', text: fa ? 'کالری امروز دقیقاً در محدوده‌ی هدف بود.' : 'Calories landed right on target today.' });
   }
 
   if (M.protein.status === 'under') {
-    out.push({ kind: 'under', icon: '🥩', text: fa
+    out.push({ kind: 'under', glyph: 'meat', text: fa
       ? `${num(over(M.protein))} گرم پروتئین کم آوردی. یک منبع پروتئین (سینه مرغ، ماست یونانی، تخم‌مرغ یا وی) اضافه کن.`
       : `${num(over(M.protein))}g short on protein. Add a protein source — chicken breast, Greek yogurt, eggs or whey.` });
   } else if (M.protein.status === 'ok' || M.protein.status === 'over') {
-    out.push({ kind: 'ok', icon: '🥩', text: fa ? 'پروتئین امروز کافی بود.' : 'Protein was covered today.' });
+    out.push({ kind: 'ok', glyph: 'meat', text: fa ? 'پروتئین امروز کافی بود.' : 'Protein was covered today.' });
   }
 
   if (M.fat.status === 'over') {
-    out.push({ kind: 'over', icon: '🥑', text: fa
+    out.push({ kind: 'over', glyph: 'drop', text: fa
       ? `چربی ${num(over(M.fat))} گرم بیشتر از هدف بود — معمولاً از روغن پخت‌وپز و سس می‌آید.`
       : `Fat ran ${num(over(M.fat))}g over — usually cooking oil and sauces.` });
   }
   if (M.carbs.status === 'over') {
-    out.push({ kind: 'over', icon: '🍞', text: fa
+    out.push({ kind: 'over', glyph: 'grain', text: fa
       ? `کربوهیدرات ${num(over(M.carbs))} گرم بیشتر از هدف بود. حجم برنج/نان را کمی کم کن.`
       : `Carbs ran ${num(over(M.carbs))}g over. Ease back on the rice/bread portion.` });
   }
   if (M.fiber.status === 'under') {
-    out.push({ kind: 'under', icon: '🌾', text: fa
+    out.push({ kind: 'under', glyph: 'leaf', text: fa
       ? 'فیبر کم بود. سبزیجات، حبوبات و میوه بیشتری اضافه کن.'
       : 'Fiber was low. Add more vegetables, legumes and fruit.' });
   }
   if (M.water.status === 'under') {
-    out.push({ kind: 'under', icon: '💧', text: fa
+    out.push({ kind: 'under', glyph: 'water', text: fa
       ? `${num(Math.abs(M.water.diff))} میلی‌لیتر آب کمتر از هدف نوشیدی.`
       : `You drank ${num(Math.abs(M.water.diff))} ml less water than your target.` });
   }
 
   for (const gr of groups) {
     if (gr.status === 'missing') {
-      out.push({ kind: 'missing', icon: gr.icon, text: fa
+      out.push({ kind: 'missing', glyph: GROUP_GLYPH[gr.id], text: fa
         ? `${t(gr.label)}: امروز اصلاً مصرف نشد.`
         : `${t(gr.label)}: none at all today.` });
     } else if (gr.status === 'under') {
-      out.push({ kind: 'under', icon: gr.icon, text: fa
+      out.push({ kind: 'under', glyph: GROUP_GLYPH[gr.id], text: fa
         ? `${t(gr.label)}: فقط ${num(gr.grams)} گرم — کمتر از حد مطلوب (${num(gr.limit)} گرم).`
         : `${t(gr.label)}: only ${num(gr.grams)}g — below the ${num(gr.limit)}g mark.` });
     } else if (gr.status === 'over') {
-      out.push({ kind: 'over', icon: gr.icon, text: fa
+      out.push({ kind: 'over', glyph: GROUP_GLYPH[gr.id], text: fa
         ? `${t(gr.label)}: ${num(gr.grams)} گرم — بیش از حد توصیه‌شده (${num(gr.limit)} گرم).`
         : `${t(gr.label)}: ${num(gr.grams)}g — above the recommended ${num(gr.limit)}g.` });
     }
@@ -302,7 +304,7 @@ function eatenBlock(date) {
       if (!items.length) continue;
       const mkcal = Math.round(sum(items, x => x.kcal));
       body.append(el('div', { class: 'ate-head', dataset: { meal: mk } },
-        el('span', {}, `${MEAL_ICON[mk]} ${t(mk)}`),
+        el('span', { class: 'meal-name' }, mealIcon(mk, { size: 15 }), el('em', {}, t(mk))),
         el('b', {}, `${num(mkcal)} ${t('kcal')}`)));
       items.forEach(it => body.append(el('div', { class: 'ate-row' },
         el('div', { class: 'ate-name' },
@@ -328,9 +330,9 @@ export function reportBody(rep) {
   box.append(el('div', { class: 'rep-hero', style: `--rc:${col}` },
     el('div', { class: 'rep-ring' }, donut(rep.kcal, rep.goals.kcal, 96)),
     el('div', { style: 'flex:1' },
-      el('b', { style: `font-size:16px;color:${col};display:block` }, t(STATUS_LABEL[rep.dayStatus] || 'onTarget')),
+      el('b', { style: `font-size:var(--t-lg);color:${col};display:block` }, t(STATUS_LABEL[rep.dayStatus] || 'onTarget')),
       el('span', { class: 'muted' }, `${num(rep.kcal)} / ${num(rep.goals.kcal)} ${t('kcal')}`),
-      el('span', { class: 'muted', style: 'display:block;font-size:11.5px;margin-top:3px' },
+      el('span', { class: 'muted', style: 'display:block;font-size:var(--t-sm);margin-top:3px' },
         `${num(rep.meals)} ${fa ? 'قلم غذا' : 'items'} · ${num(rep.burned)} ${t('burned')}`),
       rep.auto ? el('span', { class: 'auto-tag' }, t('autoArchived')) : null),
   ));
@@ -343,10 +345,16 @@ export function reportBody(rep) {
     const w = Math.min(100, m.target ? m.value / m.target * 100 : 0);
     bars.append(el('div', { class: 'rep-metric' },
       el('div', { class: 'rep-metric-top' },
-        el('span', {}, `${m.icon} ${t(m.label)}`),
+        el('span', { class: 'rep-metric-name', style: `color:${c}` },
+          metricIcon(m.key, { size: 16, cls: 'ic-lift' }),
+          el('em', {}, t(m.label))),
         el('b', { style: `color:${c}` },
           `${num(round(m.value))}${m.unit} / ${num(round(m.target))}${m.unit}`)),
-      el('div', { class: 'rep-track' }, el('i', { style: `width:${w}%;background:${c}` })),
+      el('div', { class: 'rep-track' }, (() => {
+        const fill = el('i', { style: `background:${c}` });
+        growTo(fill, w / 100);
+        return fill;
+      })()),
       el('span', { class: 'rep-diff', style: `color:${c}` },
         m.status === 'over' ? `+${num(round(Math.abs(m.diff)))}${m.unit} ${t('overBudget')}`
         : m.status === 'under' ? `−${num(round(Math.abs(m.diff)))}${m.unit} ${t('underBudget')}`
@@ -367,7 +375,7 @@ export function reportBody(rep) {
                 : gr.status === 'under' ? 'var(--warn)'
                 : gr.status === 'over' ? 'var(--red)' : 'var(--acc)';
         return el('div', { class: 'grp', style: `--gc:${c}` },
-          el('span', { class: 'grp-ico' }, gr.icon),
+          el('span', { class: 'grp-ico' }, groupIcon(gr.id, { size: 18, cls: 'ic-lift' })),
           el('b', {}, t(gr.label)),
           el('span', { class: 'grp-v' }, gr.status === 'missing' ? (fa ? 'هیچ' : 'none') : `${num(gr.grams)}g`));
       })));
@@ -380,7 +388,7 @@ export function reportBody(rep) {
     const c = a.kind === 'over' ? 'var(--red)' : a.kind === 'under' ? 'var(--warn)'
             : a.kind === 'missing' ? 'var(--red)' : 'var(--acc)';
     ad.append(el('div', { class: 'adv', style: `--ac:${c}` },
-      el('span', { class: 'adv-ico' }, a.icon),
+      el('span', { class: 'adv-ico' }, icon(a.glyph, { size: 17, cls: 'ic-lift' })),
       el('p', {}, a.text)));
   });
   box.append(ad);
@@ -445,7 +453,7 @@ export async function renderReports(hostSel = '#reports-body') {
   host.append(el('div', { class: 'card summary-bar' },
     el('div', {}, el('b', {}, num(dates.length)), el('span', {}, t('totalDays'))),
     el('div', {}, el('b', {}, num(Object.keys(reports).length)), el('span', {}, t('daysLogged'))),
-    el('div', {}, el('b', { style: 'font-size:12px' }, shortDate(dates[dates.length - 1])),
+    el('div', {}, el('b', { style: 'font-size:var(--t-sm)' }, shortDate(dates[dates.length - 1])),
       el('span', {}, t('firstDataDay'))),
   ));
 
@@ -469,13 +477,13 @@ function loggedRow(r) {
     donut(r.kcal, r.goals.kcal, 54),
     el('div', { style: 'flex:1;min-width:0' },
       el('b', {}, longDate(r.date)),
-      el('span', { class: 'muted', style: 'display:block;font-size:11.5px;margin:2px 0 5px' },
+      el('span', { class: 'muted', style: 'display:block;font-size:var(--t-sm);margin:2px 0 5px' },
         `${num(r.kcal)} / ${num(r.goals.kcal)} ${t('kcal')} · ${num(r.meals)} ${getLang() === 'fa' ? 'قلم' : 'items'}`),
       el('div', { class: 'rep-macros' },
         macroPip('P', round(r.protein), r.goals.protein, 'var(--blue)'),
         macroPip('C', round(r.carbs), r.goals.carbs, 'var(--orange)'),
         macroPip('F', round(r.fat), r.goals.fat, 'var(--pink)')),
-      el('span', { style: `display:block;font-size:11px;color:${c};margin-top:5px` },
+      el('span', { style: `display:block;font-size:var(--t-xs);color:${c};margin-top:5px` },
         t(STATUS_LABEL[r.dayStatus]))),
     el('span', { class: 'rep-arrow' }, '›'),
   );
@@ -488,7 +496,7 @@ function emptyRow(date) {
     el('div', { class: 'ed-dash' }, '—'),
     el('div', { style: 'flex:1;min-width:0' },
       el('b', {}, longDate(date)),
-      el('span', { class: 'muted', style: 'display:block;font-size:11.5px' }, t('noDataDay'))),
+      el('span', { class: 'muted', style: 'display:block;font-size:var(--t-sm)' }, t('noDataDay'))),
     el('span', { class: 'rep-arrow' }, '›'),
   );
 }
@@ -503,7 +511,7 @@ async function todayRow(date) {
     has ? donut(rep.kcal, rep.goals.kcal, 54) : el('div', { class: 'ed-dash' }, '—'),
     el('div', { style: 'flex:1;min-width:0' },
       el('b', {}, `${longDate(date)} · ${t('today')}`),
-      el('span', { class: 'muted', style: 'display:block;font-size:11.5px;margin:2px 0 5px' },
+      el('span', { class: 'muted', style: 'display:block;font-size:var(--t-sm);margin:2px 0 5px' },
         has ? `${num(rep.kcal)} / ${num(rep.goals.kcal)} ${t('kcal')} · ${num(rep.meals)} ${getLang() === 'fa' ? 'قلم' : 'items'}`
             : t('noDataDay')),
       has ? el('div', { class: 'rep-macros' },
@@ -536,13 +544,13 @@ function workoutBlock(date) {
   db.byIndex('workouts', 'date', date).then(ws => {
     body.replaceChildren();
     if (!ws.length) {
-      body.append(el('div', { class: 'muted', style: 'padding:6px 0;font-size:12.5px' }, t('noWorkout')));
+      body.append(el('div', { class: 'muted', style: 'padding:6px 0;font-size:var(--t-sm)' }, t('noWorkout')));
       return;
     }
     ws.forEach(w => {
       const mins = Math.round(((w.end || w.start) - w.start) / 60000);
       body.append(el('div', { class: 'wo-row' },
-        el('span', { class: 'wo-ico' }, '🏋️'),
+        el('span', { class: 'wo-ico' }, icon('dumbbell', { size: 17, cls: 'ic-lift' })),
         el('div', { style: 'flex:1;min-width:0' },
           el('b', {}, w.name),
           el('span', {}, `${num(w.sets || 0)} ${t('sets')} · ${num(mins)} ${t('min')}`)),
@@ -567,7 +575,7 @@ export function dayBody(rep, date) {
     box.append(el('button', { class: 'btn full', onclick: () => {
       closeSheet();
       window.dispatchEvent(new CustomEvent('open-day', { detail: date }));
-    } }, '📖 ' + t('goToDay')));
+    } }, lineIcon('book', { size: 16 }), t('goToDay')));
     return box;
   }
 
@@ -577,7 +585,7 @@ export function dayBody(rep, date) {
   box.append(el('button', { class: 'btn ghost full', style: 'margin-bottom:9px', onclick: () => {
     closeSheet();
     window.dispatchEvent(new CustomEvent('open-day', { detail: date }));
-  } }, '📖 ' + t('goToDay')));
+  } }, lineIcon('book', { size: 16 }), t('goToDay')));
 
   if (date !== todayKey()) {
     box.append(el('button', { class: 'btn ghost full', onclick: async () => {

@@ -1,7 +1,8 @@
 /* ============ AI-generated nutrition + training plan ============ */
 import * as db from './db.js';
+import { lineIcon } from './icons.js';
 import { S, tdee, bmr, saveGoals, kgToDisp, wUnit, aiConfig, hasAI, usesTargetWeight } from './store.js';
-import { t, num, getLang, pick } from './i18n.js';
+import { t, num, getLang, pick, numText } from './i18n.js';
 import {
   $, el, sheet, closeSheet, confirmSheet, toast, loading, round,
 } from './ui.js';
@@ -22,8 +23,8 @@ export async function renderPlan() {
   if (!rec) {
     host.append(
       el('div', { class: 'card', style: 'text-align:center;padding:30px 18px' },
-        el('div', { style: 'font-size:38px;margin-bottom:10px' }, '🧠'),
-        el('h3', { style: 'font-size:17px;margin-bottom:8px' }, t('aiPlan')),
+        el('div', { style: 'font-size:var(--t-5xl);margin-bottom:10px' }, '🧠'),
+        el('h3', { style: 'font-size:var(--t-xl);margin-bottom:8px' }, t('aiPlan')),
         el('p', { class: 'muted', style: 'line-height:1.9;margin:0 0 18px' }, t('planIntro')),
         el('button', { class: 'btn full', onclick: buildPlan }, t('generatePlan')),
       ),
@@ -37,8 +38,8 @@ export async function renderPlan() {
     el('div', { class: 'card' },
       el('div', { class: 'card-head' },
         el('h3', {}, t('aiPlan')),
-        el('span', { class: 'muted', style: 'font-size:11.5px' }, new Date(rec.at).toLocaleDateString(getLang() === 'fa' ? 'fa-IR' : 'en-US'))),
-      el('p', { style: 'line-height:1.9;font-size:13.5px;color:var(--tx2);margin:0' }, p.summary || ''),
+        el('span', { class: 'muted', style: 'font-size:var(--t-sm)' }, new Date(rec.at).toLocaleDateString(getLang() === 'fa' ? 'fa-IR' : 'en-US'))),
+      el('p', { style: 'line-height:1.9;font-size:var(--t-md);color:var(--tx2);margin:0' }, p.summary || ''),
     ),
 
     /* targets */
@@ -81,7 +82,7 @@ export async function renderPlan() {
         el('h4', {}, `${d.day} — ${d.focus}`),
         el('div', {}, ...(d.exercises || []).map(x => el('div', { class: 'kv' },
           el('span', {}, x.name),
-          el('b', {}, `${num(x.sets)} × ${x.reps}`)))),
+          el('b', {}, `${num(x.sets)} × ${numText(x.reps)}`)))),
         d.cardio && d.cardio !== '—' ? el('p', { style: 'margin:8px 0 0' }, `🏃 ${d.cardio}`) : null,
       )),
     ),
@@ -94,11 +95,12 @@ export async function renderPlan() {
 
     p.progression ? el('div', { class: 'card' },
       el('div', { class: 'card-head' }, el('h3', {}, getLang() === 'fa' ? 'پیشرفت تدریجی' : 'Progression')),
-      el('p', { style: 'line-height:1.9;font-size:13.5px;color:var(--tx2);margin:0' }, p.progression),
+      el('p', { style: 'line-height:1.9;font-size:var(--t-md);color:var(--tx2);margin:0' }, p.progression),
     ) : null,
 
     el('div', { class: 'warn' }, t('disclaimer')),
-    el('button', { class: 'btn ghost full', onclick: buildPlan }, '🔄 ' + t('regenerate')),
+    el('button', { class: 'btn ghost full', onclick: buildPlan },
+      lineIcon('refresh', { size: 17 }), t('regenerate')),
   );
 }
 

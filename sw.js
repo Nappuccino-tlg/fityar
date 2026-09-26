@@ -1,5 +1,5 @@
 /* ============ FitYar service worker — offline shell ============ */
-const VERSION = 'fityar-v28';
+const VERSION = 'fityar-v119';
 const SHELL = [
   './',
   './index.html',
@@ -26,11 +26,39 @@ const SHELL = [
   './js/wizard.js',
   './js/report.js',
   './js/art.js',
+  './js/art3d.js',
+  './js/moves.js',
+  './js/body3d.js',
+  './js/intro.js',
+  './js/timeline.js',
   './js/targets.js',
   './js/meals.js',
   './js/barcode.js',
   './js/coach.js',
+  './js/reminders.js',
+  './js/account.js',
+  './js/weekcard.js',
   './js/tools.js',
+  './js/motion.js',
+  './js/icons.js',
+  './js/muscles.js',
+  './js/xp.js',
+  './js/voice.js',
+  './js/globe.js', './js/smart.js',
+  './js/story.js',
+  /* The chat, the globe's geography and پویا. These were added after the
+     list was written and never joined it, so the six screens that promise
+     «بدون اینترنت هم کار می‌کند» were the six that did not — not until each
+     had been opened once with a connection. Runtime caching healed it on
+     the second visit, which is no help to someone opening the app on a bus.
+     tools/test-shell.mjs now compares this list against js/ so the next
+     file cannot go missing quietly. */
+  './js/ask.js',
+  './js/assistant.js',
+  './js/knowledge.js',
+  './js/pouya.js',
+  './js/land.js',
+  './js/compare.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-180.png',
@@ -64,20 +92,19 @@ self.addEventListener('fetch', (e) => {
 
   const url = new URL(req.url);
 
-  // Never cache AI calls or anything cross-origin except fonts.
+  // AI calls are never cached, whoever they go to.
   if (url.hostname.endsWith('googleapis.com') && !url.hostname.startsWith('fonts')) return;
 
-  if (url.origin !== location.origin) {
-    // fonts: cache-first, fall back to network
-    e.respondWith(
-      caches.match(req).then(hit => hit || fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(VERSION).then(c => c.put(req, copy)).catch(() => {});
-        return res;
-      }).catch(() => hit))
-    );
-    return;
-  }
+  /* Nothing cross-origin is cached.
+
+     This branch was written for fonts and cached everything cross-origin
+     instead — and there are no cross-origin fonts: every face is a local
+     .woff2 and the CSP's font-src is 'self', so one could not load if it
+     tried. What it actually collected was third-party API responses, which
+     accumulated in the app's cache under a comment saying "fonts", were
+     never evicted, and recorded which products had been scanned. The app
+     already keeps the ones it wants in its own `barcodes` store. */
+  if (url.origin !== location.origin) return;
 
   // same-origin: network-first for navigations so updates land, cache-first for assets
   if (req.mode === 'navigate') {

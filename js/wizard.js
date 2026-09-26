@@ -3,9 +3,10 @@
    built-in exercise library. Runs entirely offline — no AI key needed.
 ========================================================================= */
 import * as db from './db.js';
+import { lineIcon } from './icons.js';
 import { S, saveProfile, saveGoals, suggestGoals, tdee, bmr, usesTargetWeight,
          kgToDisp, dispToKg, wUnit, cmToDisp, dispToCm, lUnit } from './store.js';
-import { t, num, pick, getLang, countLabel } from './i18n.js';
+import { t, num, pick, getLang, countLabel, numText } from './i18n.js';
 import {
   $, el, sheet, closeSheet, toast, field, input, select, round, parseNum, clamp, buzz,
 } from './ui.js';
@@ -363,8 +364,8 @@ export function openWizard() {
       const g = el('div', { class: 'pick-grid three' });
       [2, 3, 4, 5, 6].forEach(d => {
         g.append(el('button', { class: 'pick sm' + (a.days === d ? ' on' : ''), onclick: () => { a.days = d; draw(); } },
-          el('b', { style: 'font-size:22px' }, num(d)),
-          el('span', { style: 'font-size:11px;color:var(--tx2)' }, getLang() === 'fa' ? 'روز' : 'days')));
+          el('b', { style: 'font-size:var(--t-2xl)' }, num(d)),
+          el('span', { style: 'font-size:var(--t-xs);color:var(--tx2)' }, getLang() === 'fa' ? 'روز' : 'days')));
       });
       const split = SPLITS[a.days] || SPLITS[4];
       return el('div', {}, g,
@@ -378,8 +379,8 @@ export function openWizard() {
       const g = el('div', { class: 'pick-grid three' });
       [30, 45, 60, 75, 90].forEach(mn => {
         g.append(el('button', { class: 'pick sm' + (a.minutes === mn ? ' on' : ''), onclick: () => { a.minutes = mn; draw(); } },
-          el('b', { style: 'font-size:20px' }, num(mn)),
-          el('span', { style: 'font-size:11px;color:var(--tx2)' }, t('minPerSession'))));
+          el('b', { style: 'font-size:var(--t-2xl)' }, num(mn)),
+          el('span', { style: 'font-size:var(--t-xs);color:var(--tx2)' }, t('minPerSession'))));
       });
       const preview = buildProgram(a);
       const n = nutritionFor(a);
@@ -422,7 +423,7 @@ export function openWizard() {
 
     closeSheet();
     buzz(50);
-    toast(`✅ ${t('planReady')} — ${num(made)} ${t('sessionShort')}`, 'ok');
+    toast(`${t('planReady')} — ${num(made)} ${t('sessionShort')}`, 'ok');
     window.dispatchEvent(new CustomEvent('data-changed'));
     window.dispatchEvent(new CustomEvent('open-program'));
   }
@@ -449,7 +450,7 @@ export async function renderProgram() {
       el('div', { class: 'hero-glow' }),
       el('div', { style: 'position:relative;text-align:center' },
         artNode('target', 'var(--acc)'),
-        el('h3', { style: 'font-size:18px;margin-bottom:8px' }, t('wizard')),
+        el('h3', { style: 'font-size:var(--t-xl);margin-bottom:8px' }, t('wizard')),
         el('p', { class: 'muted', style: 'line-height:1.9;margin:0 0 18px' }, t('wizardSub')),
         el('button', { class: 'btn full', onclick: openWizard }, t('startWizard'))));
     host.append(emptyHero, bodyMap({ selected: [], view: 'both' }));
@@ -467,11 +468,11 @@ export async function renderProgram() {
         el('div', { class: 'hero-row' },
           el('span', { class: 'hero-ico' }, g?.icon || '🎯'),
           el('div', { style: 'flex:1' },
-            el('b', { style: 'font-size:16px;display:block' }, t(g?.label || 'goalMuscle')),
+            el('b', { style: 'font-size:var(--t-lg);display:block' }, t(g?.label || 'goalMuscle')),
             el('span', { class: 'muted' }, `${t(pl?.label || 'placeGym')} · ${num(prog.days.length)} ${getLang() === 'fa' ? 'روز' : 'days'} · ${num(prog.perSession)} ${t('minPerSession')}`))),
         focus ? el('div', { class: 'chips', style: 'margin-top:12px;padding:0' },
           el('span', { class: 'chip on' }, `${t('focusBadge')}: ${pick(focus)}`),
-          el('span', { class: 'chip' }, `${t('reps')} ${prog.reps}`),
+          el('span', { class: 'chip' }, `${t('reps')} ${numText(prog.reps)}`),
           el('span', { class: 'chip' }, `${t('rest')} ${num(prog.rest)}s`),
           el('span', { class: 'chip' }, `${num(prog.totalSets)} ${t('totalSets')}`)) : null,
       )),
@@ -484,7 +485,7 @@ export async function renderProgram() {
         el('span', { class: 'day-badge' }, String.fromCharCode(65 + i)),
         el('div', { style: 'flex:1' },
           el('b', {}, d.name),
-          el('span', { class: 'muted', style: 'display:block;font-size:11.5px' },
+          el('span', { class: 'muted', style: 'display:block;font-size:var(--t-sm)' },
             `${countLabel(d.ex.length, 'exercise')} · ${countLabel(d.sets, 'set')}`)),
         el('button', { class: 'btn sm', onclick: async () => {
           const { startWorkout } = await import('./workouts.js');
@@ -502,9 +503,10 @@ export async function renderProgram() {
             el('span', { class: 'day-dot' + (isFocus ? ' focus' : '') }),
             el('div', { style: 'flex:1;min-width:0' },
               el('b', {}, meta ? pick(meta) : x.exId),
-              el('span', { class: 'muted', style: 'display:block;font-size:11px' }, pick(mm))),
+              el('span', { class: 'muted', style: 'display:block;font-size:var(--t-xs)' }, pick(mm))),
             el('div', { class: 'day-spec' },
-              el('span', { class: 'day-sets' }, `${countLabel(x.sets, 'set')} × ${x.reps}`),
+              el('span', { class: 'day-sets' },
+                `${countLabel(x.sets, 'set')} × ${numText(x.reps)}`),
               el('span', { class: 'day-rest' }, `⏱ ${num(x.restSec)}${getLang() === 'fa' ? 'ث' : 's'}`)));
         })),
       d.cardioMin ? el('div', { class: 'day-cardio' }, `🏃 ${getLang() === 'fa' ? 'هوازی' : 'Cardio'} ${num(d.cardioMin)} ${t('minPerSession')}`) : null,
@@ -537,7 +539,8 @@ export async function renderProgram() {
       toast(`${t('planSaved')} (${num(made)})`, 'ok');
       window.dispatchEvent(new CustomEvent('data-changed'));
     } }, t('saveAsRoutine')),
-    el('button', { class: 'btn ghost full', style: 'margin-top:9px', onclick: openWizard }, '🔄 ' + t('rebuildPlan')),
+    el('button', { class: 'btn ghost full', style: 'margin-top:9px', onclick: openWizard },
+      lineIcon('refresh', { size: 17 }), t('rebuildPlan')),
   );
 }
 

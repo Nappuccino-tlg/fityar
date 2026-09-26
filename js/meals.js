@@ -3,7 +3,8 @@
    for food you eat again and again.
 ================================================================== */
 import * as db from './db.js';
-import { S, MEAL_KEYS, MEAL_ICON } from './store.js';
+import { mealIcon } from './icons.js';
+import { S, MEAL_KEYS } from './store.js';
 import { t, num, pick, getLang, countLabel } from './i18n.js';
 import {
   $, el, sheet, closeSheet, confirmSheet, toast, field, input, select,
@@ -35,7 +36,7 @@ export async function saveMealFromDay(date, mealKey) {
     el('div', { class: 'info' },
       el('div', { class: 'kv' }, el('span', {}, t('itemsCount')), el('b', {}, num(logs.length))),
       el('div', { class: 'kv' }, el('span', {}, t('kcal')), el('b', {}, num(kcal))),
-      el('div', { style: 'margin-top:8px;font-size:11.5px' },
+      el('div', { style: 'margin-top:8px;font-size:var(--t-sm)' },
         logs.map(l => pick(l)).join('، '))),
     field(t('mealName'), nameIn),
     el('button', { class: 'btn full', onclick: async () => {
@@ -76,7 +77,7 @@ export async function openSavedMeals(mealKey = null) {
     const list = el('div', { class: 'list' });
     ms.forEach(sm => list.append(el('div', { class: 'li saved-meal' },
       el('div', { class: 'li-main', onclick: () => { closeSheet(); applySavedMeal(sm, mealKey); } },
-        el('b', {}, `${MEAL_ICON[sm.meal] || '🍽️'} ${sm.name}`),
+        el('b', { class: 'meal-name' }, mealIcon(sm.meal, { size: 15 }), el('em', {}, sm.name)),
         el('span', {}, `${countLabel(sm.items.length, 'item')} · ${num(sm.kcal)} ${t('kcal')}`)),
       el('button', { class: 'swipe-del', onclick: async (e) => {
         e.stopPropagation();
@@ -172,7 +173,7 @@ export function openPortionGuide() {
     ...IRANIAN.map(x => el('div', { class: 'kv' },
       el('span', {}, fa ? x.fa : x.en),
       el('b', {}, `${num(x.g)}g · ${num(x.kcal)} ${t('kcal')}`))),
-    el('div', { class: 'muted', style: 'font-size:11.5px;margin-top:14px;line-height:1.8' },
+    el('div', { class: 'muted', style: 'font-size:var(--t-sm);margin-top:14px;line-height:1.8' },
       fa ? 'این‌ها تخمین‌اند. اگر ترازو داری، یک هفته وزن کن تا چشمت عادت کند — بعد دیگر لازم نیست.'
          : 'These are estimates. If you own a scale, weigh for a week to train your eye — after that you can stop.'),
   );
