@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حریم خصوصی — فیت‌یار</title>
+<style>
+  @font-face{font-family:Vazirmatn;src:url(./fonts/vazirmatn-400.woff2)format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:Vazirmatn;src:url(./fonts/vazirmatn-700.woff2)format("woff2");font-weight:700;font-display:swap}
+  :root{--bg:#0b0d10;--card:#141920;--line:#232a35;--tx:#e9edf2;--tx2:#9aa6b8;--acc:#3ddc84;--warn:#ffb020}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+       font:16px/2 Vazirmatn,Tahoma,system-ui,sans-serif;padding:24px 18px 60px}
+  main{max-width:760px;margin:0 auto}
+  h1{font-size:24px;margin:0 0 6px}
+  .sub{color:var(--tx2);font-size:14px;margin:0 0 26px}
+  h2{font-size:18px;margin:30px 0 10px;padding-top:18px;border-top:1px solid var(--line)}
+  p,li{color:var(--tx);margin:8px 0}
+  .muted{color:var(--tx2);font-size:14px}
+  ul{padding-inline-start:22px;margin:8px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin:14px 0}
+  .key{border-inline-start:3px solid var(--acc)}
+  .flag{border-inline-start:3px solid var(--warn)}
+  b{color:var(--acc)}
+  .en{direction:ltr;text-align:left;margin-top:40px;padding-top:20px;border-top:1px solid var(--line)}
+  .en h2{border:0;padding:0}
+  a{color:var(--acc)}
+  code{background:#0b0d10;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:14px;direction:ltr;display:inline-block}
+</style>
+</head>
+<body>
+<main>
+
+<h1>سیاست حریم خصوصی — فیت‌یار</h1>
+<p class="sub">آخرین به‌روزرسانی: شهریور ۱۴۰۵</p>
+
+<div class="card key">
+  <p><b>خلاصه:</b> فیت‌یار به‌صورت پیش‌فرض همه‌چیز را روی همان دستگاه نگه می‌دارد و
+  بدون حساب کاربری کامل کار می‌کند. سه استثنا هست و هر سه با انتخاب خودتان:
+  اسکن عکس یا توصیف با متن (که فقط همان عکس یا متن فرستاده می‌شود)، اسکن بارکدِ
+  ناشناخته (که فقط عدد بارکد فرستاده می‌شود)، و <b>ساختن حساب کاربری</b> — که
+  اختیاری است و برای وقتی است که بخواهید سابقه‌تان با تعویض گوشی همراهتان بیاید.
+  عکس‌ها هیچ‌وقت روی حساب ذخیره نمی‌شوند.</p>
+</div>
+
+<h2>چه اطلاعاتی ذخیره می‌شود و کجا</h2>
+<p>وزن، قد، سن، هدف، وعده‌های غذایی، تمرین‌ها، اندازه‌های بدن، عکس‌های وعده و عکس‌های پیشرفت —
+همهٔ این‌ها در حافظهٔ داخلی مرورگرِ همان دستگاه (IndexedDB) ذخیره می‌شوند.</p>
+<ul>
+  <li>تا وقتی حساب نسازید، ما به این اطلاعات دسترسی نداریم و نسخه‌ای از آن‌ها
+      جایی نگه نمی‌داریم. اگر حساب بسازید و «ارسال داده‌ها» را بزنید، یک نسخه از
+      همین اطلاعات (به‌جز عکس‌ها) روی سرور ما ذخیره می‌شود — و هر وقت بخواهید،
+      از داخل خود برنامه پاک می‌شود.</li>
+  <li>اگر برنامه را پاک کنید یا داده‌های آن را از تنظیمات دستگاه حذف کنید، این اطلاعات از بین می‌روند و قابل بازیابی نیستند.</li>
+  <li>فایل پشتیبانی که خودتان از بخش «بیشتر» می‌گیرید، در دستگاه شما ساخته می‌شود و هر جا شما بخواهید می‌ماند.</li>
+</ul>
+
+<h2>چه چیزی دستگاه را ترک می‌کند</h2>
+<p>فقط در این حالت‌ها، و همه با اقدام خودتان:</p>
+<ul>
+  <li><b>حساب کاربری (اختیاری):</b> اگر حساب بسازید، نام، نام خانوادگی، نام کاربری
+      و شماره موبایلتان روی سرور ما ذخیره می‌شود. <b>کلمهٔ عبور شما ذخیره نمی‌شود</b> —
+      فقط یک اثر رمزنگاری‌شده از آن نگه داشته می‌شود که نمی‌توان از رویش رمز را
+      به دست آورد. اگر «ارسال داده‌ها» را بزنید، دفترچهٔ شما (وزن، وعده‌ها،
+      تمرین‌ها) هم روی همان حساب ذخیره می‌شود تا روی گوشی دیگر در دسترس باشد.
+      <b>عکس‌ها هیچ‌وقت ارسال نمی‌شوند</b> و روی همان دستگاه می‌مانند.
+      بدون ساختن حساب، هیچ‌کدام از این‌ها اتفاق نمی‌افتد و تمام برنامه کار می‌کند.</li>
+  <li><b>اسکن عکس غذا:</b> عکسی که می‌گیرید برای تخمین کالری به سرویس واسط ما روی
+      Cloudflare فرستاده می‌شود و از آنجا به مدل هوش مصنوعی همان شرکت می‌رسد.</li>
+  <li><b>توصیف با متن:</b> متنی که می‌نویسید از همان مسیر می‌رود.</li>
+  <li><b>اشتراک خوانش بارکد (قابل خاموش کردن):</b> وقتی بارکدی را خودتان به
+      برنامه یاد می‌دهید، <em>عدد بارکد و همان مقادیری که از روی بسته وارد
+      کرده‌اید</em> به سرور ما فرستاده می‌شود تا کاربر بعدی که همان محصول را
+      اسکن کرد، آماده تحویل بگیرد. <b>هیچ چیزی از شما همراهش نمی‌رود</b> — نه
+      نام، نه حساب کاربری، نه نشانه‌ای که بشود فهمید چه کسی فرستاده؛ این مسیر
+      اصلاً توکن حساب را نمی‌پذیرد. زیر همان فرمِ یادگیری بارکد یک تیک هست که
+      هر وقت خواستید برش دارید.</li>
+  <li><b>اسکن بارکد:</b> اگر آن بارکد را قبلاً به برنامه یاد نداده باشید، فقط
+      <em>عددِ بارکد</em> به پایگاه‌دادهٔ باز
+      <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a>
+      فرستاده می‌شود تا مشخصات محصول برگردد. عکسی فرستاده نمی‌شود و نتیجه روی
+      همان دستگاه ذخیره می‌ماند، پس اسکن دومِ همان محصول بدون اینترنت کار می‌کند.</li>
+</ul>
+<p>در اسکن عکس، توصیف با متن و اسکن بارکد، نام، شماره، وزن، سن یا سابقهٔ شما
+همراه درخواست فرستاده نمی‌شود.
+سرویس واسط ما عکس‌ها را ذخیره نمی‌کند. Cloudflare و Open Food Facts ممکن است طبق
+سیاست‌های خودشان لاگ فنی نگه دارند.</p>
+
+<div class="card flag">
+  <p>اگر ترجیح می‌دهید هیچ‌چیز از دستگاه خارج نشود، حساب نسازید و از آن سه قابلیت
+  استفاده نکنید.
+  ثبت دستی و جست‌وجو در دیتابیس غذاها کاملاً آفلاین کار می‌کنند و برنامه بدون
+  آن‌ها هم کامل است. بارکدهایی که خودتان یاد داده‌اید هم آفلاین کار می‌کنند.</p>
+</div>
+
+<h2>دسترسی‌هایی که برنامه می‌خواهد</h2>
+<ul>
+  <li><b>دوربین</b> — فقط برای گرفتن عکس وعده، عکس پیشرفت و خواندن بارکد. عکس‌ها در همان دستگاه می‌مانند مگر آنکه خودتان اسکن را بزنید.</li>
+  <li><b>حافظه</b> — فقط برای ذخیرهٔ فایل پشتیبان و انتخاب عکس از گالری.</li>
+  <li><b>اینترنت</b> — فقط برای همان قابلیت‌هایی که بالا آمد: هوش مصنوعی، اسکن بارکدِ
+      ناشناخته، و اگر حساب ساخته باشید، ورود و همگام‌سازی. بقیهٔ برنامه بدون اینترنت کار می‌کند.</li>
+</ul>
+
+<h2>آنچه در این برنامه نیست</h2>
+<ul>
+  <li>حساب کاربری <b>اجباری</b> — ساختن حساب کاملاً اختیاری است و برنامه بدون آن کامل کار می‌کند</li>
+  <li>تبلیغات و ابزارهای ردیابی</li>
+  <li>ابزار آنالیز رفتار کاربر</li>
+  <li>فروش یا اشتراک‌گذاری اطلاعات با هیچ شخص یا شرکتی</li>
+</ul>
+
+<h2>کودکان</h2>
+<p>این برنامه برای بزرگسالان طراحی شده و اطلاعاتی از کودکان جمع‌آوری نمی‌کند.</p>
+
+<h2>سلب مسئولیت</h2>
+<p>عددهای کالری و درشت‌مغذی‌ها <b>تخمین</b> هستند، نه اندازه‌گیری آزمایشگاهی. برنامه‌های تمرینی
+و غذایی هم عمومی‌اند و جای مشاورهٔ پزشک، متخصص تغذیه یا مربی را نمی‌گیرند.
+اگر بیماری زمینه‌ای، بارداری یا شرایط خاصی دارید، پیش از تغییر رژیم یا شروع تمرین با پزشک مشورت کنید.</p>
+
+<h2>تغییرات این سیاست</h2>
+<p>اگر روزی چیزی در این متن عوض شود، تاریخ بالای صفحه به‌روز می‌شود و نسخهٔ جدید همین‌جا منتشر می‌گردد.</p>
+
+<h2>تماس و حذف اطلاعات</h2>
+<p>برای حذف اطلاعاتتان به کسی نیاز ندارید و لازم نیست از ما درخواست کنید:</p>
+<ul>
+  <li><b>روی دستگاه:</b> پاک کردن داده‌های اپ یا حذف خودِ اپ، همه را از بین می‌برد.</li>
+  <li><b>روی حساب کاربری:</b> «بیشتر ← حساب کاربری ← حذف حساب کاربری». حساب و
+      نسخه‌ای که روی سرور است همان‌جا و بلافاصله پاک می‌شوند و برگشتی ندارند.
+      داده‌های روی گوشی خودتان دست‌نخورده می‌ماند.</li>
+</ul>
+<p>پیش از حذف، اگر می‌خواهید سابقه‌تان بماند، از بخش
+«بیشتر ← پشتیبان‌گیری» یک فایل خروجی بگیرید.</p>
+<p>اگر کلمهٔ عبورتان را فراموش کنید، تنها راه برگشتن به حساب، همان کد بازیابی است
+که هنگام ثبت‌نام یک‌بار نشان داده می‌شود. ما ایمیلی از شما نگرفته‌ایم که بتوانیم
+رمز تازه برایتان بفرستیم، و آن کد را هم نزد خودمان به شکل خوانا نگه نمی‌داریم.</p>
+<p class="muted">برای پرسش یا گزارش اشکال، از بخش نظرات همین اپ در کافه‌بازار
+استفاده کنید.</p>
+
+<div class="en">
+<h2>Privacy Policy — FitYar (English summary)</h2>
+<p>FitYar works fully without an account, and by default your weight, height, age, goals,
+meals, workouts, measurements and photos are held in the app's own storage on your device
+only, where we cannot read them.</p>
+<p>An <b>optional account</b> exists for one purpose: so your history follows you when you
+change phone. If you create one, your first and last name, username and mobile number are
+stored on our server. <b>Your password is not stored</b> — only a cryptographic hash it
+cannot be recovered from. If you press Upload, your diary (weights, meals, workouts) is
+stored on that account too. <b>Photos are never uploaded</b> and stay on the device.
+You can delete the account and the copy on the server at any time from
+More &rarr; Account &rarr; Delete account.</p>
+<p>If you forget your password, the one-time recovery code shown when you registered is the
+only way back in: no email address was collected, so we cannot send you a reset link.</p>
+<p>When you teach the app a barcode yourself, the barcode and the figures you
+read off the packet are shared so the next person scanning that product gets
+them ready. Nothing about you travels with it — no name, no account, no token;
+that route does not accept one. A tick box under the barcode form turns it off.</p>
+<p>Two features send data for analysis, and only when you choose them: <b>meal photo scanning</b> and
+<b>text description</b>. The photo or the text is sent to our proxy on Cloudflare and on to
+Cloudflare's AI model for an estimate. No name, contact detail or personal metric travels
+with it, and our proxy stores nothing. Cloudflare may keep technical logs under its own policy.</p>
+<p>Camera access is used only for meal photos, progress photos and barcodes. There are no
+adverts, no analytics and no trackers, and nothing is sold or shared. Manual entry, the
+built-in food database works fully offline, and so does any barcode you have taught the
+app yourself. Scanning a barcode the app does not know sends only the barcode digits to
+the open Open Food Facts database to look the product up.</p>
+<p>Nutrition figures are estimates, not measurements, and the plans are general guidance —
+they do not replace advice from a doctor, dietitian or trainer.</p>
+<p>To delete your data you do not need to contact anyone. Clearing the app's data or
+uninstalling it removes everything on the device; if you made an account, More &rarr;
+Account &rarr; Delete account erases the account and the server copy immediately and for
+good, leaving the data on your phone untouched.
+Export a backup first from More → Backup if you want to keep your history.</p>
+<p>For questions or bug reports, use the app's review section on Cafe Bazaar.</p>
+</div>
+
+</main>
+</body>
+</html>
